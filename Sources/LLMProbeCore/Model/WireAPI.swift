@@ -55,6 +55,9 @@ public enum ProviderKind: String, Codable, CaseIterable, Sendable, Identifiable 
     case moonshot
     case zhipu
     case dashscope
+    case minimax
+    case xiaomi
+    case iflow
     case siliconflow
     case groq
     case mistral
@@ -85,6 +88,9 @@ public enum ProviderKind: String, Codable, CaseIterable, Sendable, Identifiable 
         case .moonshot: return "Moonshot / Kimi"
         case .zhipu: return "Zhipu GLM"
         case .dashscope: return "Alibaba DashScope"
+        case .minimax: return "MiniMax"
+        case .xiaomi: return "Xiaomi MiMo"
+        case .iflow: return "iFlow"
         case .siliconflow: return "SiliconFlow"
         case .groq: return "Groq"
         case .mistral: return "Mistral"
@@ -115,6 +121,9 @@ public enum ProviderKind: String, Codable, CaseIterable, Sendable, Identifiable 
         case .moonshot: return "https://api.moonshot.cn/v1"
         case .zhipu: return "https://open.bigmodel.cn/api/paas/v4"
         case .dashscope: return "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        case .minimax: return "https://api.minimax.io/v1"
+        case .xiaomi: return "https://api.xiaomimimo.com/v1"
+        case .iflow: return "https://apis.iflow.cn/v1"
         case .siliconflow: return "https://api.siliconflow.cn/v1"
         case .groq: return "https://api.groq.com/openai/v1"
         case .mistral: return "https://api.mistral.ai/v1"
@@ -155,6 +164,9 @@ public enum ProviderKind: String, Codable, CaseIterable, Sendable, Identifiable 
         case .moonshot: return ["MOONSHOT_API_KEY", "KIMI_API_KEY"]
         case .zhipu: return ["ZHIPUAI_API_KEY", "ZHIPU_API_KEY", "GLM_API_KEY"]
         case .dashscope: return ["DASHSCOPE_API_KEY", "QWEN_API_KEY"]
+        case .minimax: return ["MINIMAX_API_KEY", "MINIMAX_CN_API_KEY"]
+        case .xiaomi: return ["XIAOMI_API_KEY", "MIMO_API_KEY"]
+        case .iflow: return ["IFLOW_API_KEY"]
         case .siliconflow: return ["SILICONFLOW_API_KEY"]
         case .groq: return ["GROQ_API_KEY"]
         case .mistral: return ["MISTRAL_API_KEY"]

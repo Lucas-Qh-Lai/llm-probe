@@ -100,6 +100,13 @@ public enum ProviderInference {
             ("glm", .zhipu),
             ("dashscope", .dashscope),
             ("qwen", .dashscope),
+            ("minimax", .minimax),
+            ("xiaomi", .xiaomi),
+            ("mimo", .xiaomi),
+            ("iflow", .iflow),
+            ("xinliu", .iflow),
+            ("z.ai", .zhipu),
+            ("zai", .zhipu),
             ("siliconflow", .siliconflow),
             ("groq", .groq),
             ("mistral", .mistral),
@@ -129,10 +136,10 @@ public enum ProviderInference {
     public static func wireAPI(hint: String?, provider: ProviderKind, baseURL: String? = nil) -> WireAPI {
         if let hint {
             switch hint.lowercased() {
-            case "chat", "chat_completions", "openai-chat", "openai": return .openAIChat
-            case "responses", "openai-responses": return .openAIResponses
-            case "messages", "anthropic", "anthropic-messages": return .anthropicMessages
-            case "gemini", "google", "generatecontent": return .googleGemini
+            case "chat", "chat_completions", "chat-completions", "openai-chat", "openai", "openai-completions", "openai_legacy": return .openAIChat
+            case "responses", "openai-responses", "openai_chatgpt_responses", "codex_responses": return .openAIResponses
+            case "messages", "anthropic", "anthropic-messages", "anthropic_messages": return .anthropicMessages
+            case "gemini", "google", "generatecontent", "google-generative-ai", "vertexai": return .googleGemini
             case "ollama": return .ollamaChat
             default: break
             }

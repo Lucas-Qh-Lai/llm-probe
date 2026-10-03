@@ -434,5 +434,171 @@ public enum SelfTest {
             if Capability.tools.localizedName != "Tool calling" { return "CLI capability names are not English" }
             return nil
         },
+        Check(name: "jsonc.strips-comments-and-trailing-commas") {
+            let parsed = MiniJSONC.parse("""
+            {
+              // line comment
+              "provider": {
+                /* block comment */
+                "baseUrl": "https://api.example.com/v1",
+                "models": ["alpha", "beta",],
+              },
+            }
+            """)
+            let provider = parsed?["provider"] as? [String: Any]
+            let models = provider?["models"] as? [String]
+            if provider?["baseUrl"] as? String != "https://api.example.com/v1" { return "the JSONC field was not parsed" }
+            if models != ["alpha", "beta"] { return "trailing commas or arrays were parsed incorrectly" }
+            return nil
+        },
+        Check(name: "yaml.parses-nested-provider-sequence") {
+            let parsed = MiniYAML.parse("""
+            plugins:
+              - id: llm-provider
+                config:
+                  providers:
+                    acme:
+                      api: openai-completions
+                      baseURL: https://api.example.com/v1
+                      apiKeyEnv: ACME_API_KEY
+                      models:
+                        - id: alpha
+                        - id: beta
+            """)
+            let plugins = parsed?["plugins"] as? [Any]
+            let first = plugins?.first as? [String: Any]
+            let config = first?["config"] as? [String: Any]
+            let providers = config?["providers"] as? [String: Any]
+            let acme = providers?["acme"] as? [String: Any]
+            let models = acme?["models"] as? [Any]
+            if acme?["baseURL"] as? String != "https://api.example.com/v1" { return "nested YAML mapping was lost" }
+            if models?.count != 2 { return "nested YAML sequence was parsed incorrectly" }
+            return nil
+        },
+        Check(name: "yaml.top-level-sequence-is-wrapped-for-extraction") {
+            let root = ConfigDecoding.dictionary(
+                text: """
+                - id: provider-plugin
+                  config:
+                    providers:
+                      acme:
+                        api: openai-completions
+                        baseURL: https://api.example.com/v1
+                        models:
+                          - id: alpha
+                """,
+                path: "/tmp/profile.patch.yml"
+            )
+            let endpoints = AgentConfigExtractor.endpoints(
+                root: root ?? [:],
+                context: AgentConfigExtractor.EndpointContext(
+                    sourceID: "fixture",
+                    displayName: "Fixture",
+                    path: "/tmp/profile.patch.yml",
+                    includeFlatEndpoint: false,
+                    environment: [:]
+                )
+            )
+            if endpoints.count != 1 { return "top-level YAML sequence was not extracted" }
+            if endpoints.first?.knownModels != ["alpha"] { return "sequence provider models were lost" }
+            return nil
+        },
+        Check(name: "yaml.indentless-sequence-belongs-to-mapping-key") {
+            let parsed = MiniYAML.parse("""
+            custom_providers:
+            - api: openai-completions
+              base_url: https://api.example.com/v1
+              model: alpha
+            - api: anthropic-messages
+              base_url: https://api.example.com/v1
+              model: beta
+            top_level: value
+            """)
+            let providers = parsed?["custom_providers"] as? [Any]
+            let first = providers?.first as? [String: Any]
+            if providers?.count != 2 { return "indentless sequence was not attached to its mapping key" }
+            if first?["base_url"] as? String != "https://api.example.com/v1" { return "sequence item mapping was lost" }
+            if parsed?["top_level"] as? String != "value" { return "mapping parsing did not resume after the sequence" }
+            return nil
+        },
+        Check(name: "agent-config.extractor-builds-provider-endpoints") {
+            let root: [String: Any] = [
+                "model": [
+                    "providers": [
+                        "acme": [
+                            "api": "openai-completions",
+                            "baseURL": "https://api.example.com/v1",
+                            "apiKeyEnv": "ACME_API_KEY",
+                            "models": [["id": "alpha"], ["id": "beta"]]
+                        ]
+                    ]
+                ]
+            ]
+            let endpoints = AgentConfigExtractor.endpoints(
+                root: root,
+                context: AgentConfigExtractor.EndpointContext(
+                    sourceID: "fixture",
+                    displayName: "Fixture",
+                    path: "/tmp/fixture.json",
+                    includeFlatEndpoint: false
+                )
+            )
+            guard let endpoint = endpoints.first else { return "no endpoint was extracted" }
+            if endpoint.wireAPI != .openAIChat { return "the API hint was not mapped" }
+            if endpoint.knownModels != ["alpha", "beta"] { return "provider models were not preserved" }
+            if endpoint.auth.secret.label != "$ACME_API_KEY" { return "the environment credential reference was lost" }
+            return nil
+        },
+        Check(name: "agent-config.extractor-does-not-infer-vendor-from-model-id") {
+            let root: [String: Any] = [
+                "providers": [
+                    "custom": [
+                        "api": "openai-completions",
+                        "baseURL": "https://gateway.example/v1",
+                        "models": [["id": "claude-looking-model-name"]]
+                    ]
+                ]
+            ]
+            let endpoints = AgentConfigExtractor.endpoints(
+                root: root,
+                context: AgentConfigExtractor.EndpointContext(
+                    sourceID: "fixture",
+                    displayName: "Fixture",
+                    path: "/tmp/fixture.json",
+                    includeFlatEndpoint: false,
+                    environment: [:]
+                )
+            )
+            if endpoints.first?.provider != .custom { return "the model id incorrectly selected a vendor" }
+            return nil
+        },
+        Check(name: "provider-inference.recognizes-added-vendors-and-wires") {
+            if ProviderInference.kind(from: "minimax", baseURL: nil) != .minimax { return "MiniMax was not recognized" }
+            if ProviderInference.kind(from: "mimo", baseURL: nil) != .xiaomi { return "MiMo was not recognized" }
+            if ProviderInference.kind(from: "iflow", baseURL: nil) != .iflow { return "iFlow was not recognized" }
+            if ProviderInference.kind(from: "zai", baseURL: nil) != .zhipu { return "Z.ai was not recognized" }
+            if ProviderInference.wireAPI(hint: "codex_responses", provider: .custom, baseURL: nil) != .openAIResponses {
+                return "Codex Responses hint was not mapped"
+            }
+            if ProviderInference.wireAPI(hint: "anthropic_messages", provider: .custom, baseURL: nil) != .anthropicMessages {
+                return "Anthropic Messages hint was not mapped"
+            }
+            return nil
+        },
+        Check(name: "discovery.product-names-use-approved-capitalization") {
+            let names = ConfigDiscovery.knownSources(environment: [:]).map(\.1)
+            let expected = [
+                "Codex CLI", "Claude Code", "OpenCode", "Gemini CLI", "Qwen Code",
+                "DeepSeek Harness", "Kimi Code CLI", "MiniMax Code", "ZCode",
+                "MiMo Code", "iFlow CLI", "Trae Agent", "GitHub Copilot CLI",
+                "Cursor CLI", "Amazon Q Developer CLI", "Pi", "OpenClaw", "Hermes Agent", "Aider"
+            ]
+            let missing = expected.filter { !names.contains($0) }
+            if !missing.isEmpty { return "missing approved names: \(missing.joined(separator: ", "))" }
+            if names.contains("opencode") || names.contains("OpenAI Codex") {
+                return "an outdated product capitalization remains"
+            }
+            return nil
+        },
     ]
 }

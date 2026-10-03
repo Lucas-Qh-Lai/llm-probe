@@ -7,17 +7,32 @@ public enum ConfigDiscovery {
         let home = PathTools.homeDirectory
         var sources: [(String, String, String)] = [
             ("cc-switch", "CC Switch", CCSwitchReader.databasePath(environment: environment)),
-            ("codex", "OpenAI Codex", CodexConfigReader.configPath(environment: environment)),
+            ("codex", "Codex CLI", CodexConfigReader.configPath(environment: environment)),
             ("claude-code", "Claude Code", home + "/.claude/settings.json"),
-            ("opencode", "opencode", home + "/.config/opencode/opencode.json"),
+            ("opencode", "OpenCode", home + "/.config/opencode/opencode.json"),
+            ("qwen-code", "Qwen Code", home + "/.qwen/settings.json"),
+            ("deepseek-harness", "DeepSeek Harness", home + "/.dsh/profiles/web/cordis.patch.yml"),
+            ("kimi-code", "Kimi Code CLI", home + "/.kimi/config.toml"),
+            ("minimax-code", "MiniMax Code", home + "/.config/minimax-code/config.json"),
+            ("zcode", "ZCode", home + "/.zcode/config.json"),
+            ("mimo-code", "MiMo Code", home + "/.config/mimocode/mimocode.jsonc"),
+            ("iflow-cli", "iFlow CLI", home + "/.iflow/settings.json"),
+            ("trae-agent", "Trae Agent", home + "/.trae/trae_config.yaml"),
             ("gemini-cli", "Gemini CLI", home + "/.gemini/settings.json"),
+            ("github-copilot-cli", "GitHub Copilot CLI", home + "/.copilot/config.json"),
+            ("cursor-cli", "Cursor CLI", home + "/.cursor"),
+            ("amazon-q-developer-cli", "Amazon Q Developer CLI", home + "/.aws/amazonq"),
+            ("pi", "Pi", home + "/.pi/agent/models.json"),
+            ("openclaw", "OpenClaw", home + "/.openclaw/openclaw.json"),
+            ("hermes-agent", "Hermes Agent", home + "/.hermes/config.yaml"),
             ("continue", "Continue", home + "/.continue/config.json"),
             ("aider", "Aider", home + "/.aider.conf.yml"),
             ("environment", "Environment variables", "process environment"),
             ("local-scan", "Local servers", "127.0.0.1"),
         ]
         if let codexHome = environment["CODEX_HOME"], !codexHome.isEmpty {
-            sources[1] = ("codex", "OpenAI Codex", (codexHome as NSString).appendingPathComponent("config.toml"))
+            let path = (codexHome as NSString).appendingPathComponent("config.toml")
+            sources = sources.map { $0.0 == "codex" ? ("codex", "Codex CLI", path) : $0 }
         }
         return sources
     }
@@ -39,25 +54,31 @@ public enum ConfigDiscovery {
         endpoints.append(contentsOf: codex.endpoints)
         sources.append(codex.source)
 
-        let claude = ClaudeCodeConfigReader.read(environment: environment)
-        endpoints.append(contentsOf: claude.endpoints)
-        sources.append(claude.source)
-
-        let opencode = OpenCodeConfigReader.read(environment: environment)
-        endpoints.append(contentsOf: opencode.endpoints)
-        sources.append(opencode.source)
-
-        let gemini = GeminiCLIReader.read(environment: environment)
-        endpoints.append(contentsOf: gemini.endpoints)
-        sources.append(gemini.source)
-
-        let continueReader = ContinueReader.read(environment: environment)
-        endpoints.append(contentsOf: continueReader.endpoints)
-        sources.append(continueReader.source)
-
-        let aider = AiderReader.read(environment: environment)
-        endpoints.append(contentsOf: aider.endpoints)
-        sources.append(aider.source)
+        let harnessReaders: [(endpoints: [ProbeEndpoint], source: DiscoverySource)] = [
+            ClaudeCodeConfigReader.read(environment: environment),
+            OpenCodeConfigReader.read(environment: environment),
+            AgentHarnessReaders.qwen(environment: environment),
+            AgentHarnessReaders.deepSeekHarness(environment: environment),
+            AgentHarnessReaders.kimi(environment: environment),
+            AgentHarnessReaders.minimaxCode(environment: environment),
+            AgentHarnessReaders.zcode(environment: environment),
+            AgentHarnessReaders.mimoCode(environment: environment),
+            AgentHarnessReaders.iflow(environment: environment),
+            AgentHarnessReaders.traeAgent(environment: environment),
+            GeminiCLIReader.read(environment: environment),
+            AgentHarnessReaders.githubCopilotCLI(environment: environment),
+            AgentHarnessReaders.cursorCLI(),
+            AgentHarnessReaders.amazonQDeveloperCLI(),
+            AgentHarnessReaders.pi(environment: environment),
+            AgentHarnessReaders.openClaw(environment: environment),
+            AgentHarnessReaders.hermes(environment: environment),
+            ContinueReader.read(environment: environment),
+            AiderReader.read(environment: environment),
+        ]
+        for reader in harnessReaders {
+            endpoints.append(contentsOf: reader.endpoints)
+            sources.append(reader.source)
+        }
 
         if includeEnvironment {
             let environmentReader = EnvironmentReader.read(environment: environment)

@@ -215,7 +215,7 @@ public enum EnvironmentReader {
             guard let keyName = names.first(where: { name in
                 guard let value = environment[name] else { return false }
                 return !value.trimmingCharacters(in: .whitespaces).isEmpty
-            }), let value = environment[keyName] else { continue }
+            }), environment[keyName] != nil else { continue }
             guard let baseURL = provider.defaultBaseURL else { continue }
 
             let modelVariable = names.first { $0.hasSuffix("_MODEL") }

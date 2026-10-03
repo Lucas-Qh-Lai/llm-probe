@@ -111,6 +111,22 @@ struct Options {
     func double(_ key: String) -> Double? { values[key].flatMap(Double.init) }
 }
 
+/// Rejects options a command does not implement.
+///
+/// An ignored typo silently changes what a command does — `llmprobe import
+/// --no-locl` would read the network while the caller believed it asked for a
+/// local-only scan. Every flag a command accepts is therefore listed here on
+/// purpose, and anything else exits with code 2.
+func validate(_ options: Options, command: String, flags: Set<String>, values: Set<String> = []) {
+    let unknownFlags = options.flags.subtracting(flags).subtracting(["help", "h"]).sorted().map { "--\($0)" }
+    let unknownValues = Set(options.values.keys).subtracting(values).sorted().map { "--\($0)" }
+    let unknown = (unknownFlags + unknownValues).sorted()
+    guard unknown.isEmpty else {
+        let noun = unknown.count == 1 ? "option" : "options"
+        fail("Unknown \(noun) for `\(command)`: \(unknown.joined(separator: ", ")). Run `llmprobe help` for the supported options.")
+    }
+}
+
 func plan(from options: Options) -> ProbePlan {
     let name = options.value("plan") ?? "quick"
     var selected: ProbePlan
@@ -272,6 +288,14 @@ let options = Options(arguments)
 let command = arguments.first(where: { !$0.hasPrefix("--") }) ?? "help"
 pinEnglishOutput()
 
+// `--help` has to win over every command: `llmprobe import --help` used to fall
+// through to the import itself and write endpoints into the real state file,
+// because `Options` only collects flags and the command lookup skips them.
+if command != "help", options.has("help") || options.has("h") || arguments.contains("-h") {
+    printUsage()
+    exit(0)
+}
+
 switch command {
 case "help", "-h", "--help":
     printUsage()
@@ -280,6 +304,7 @@ case "version", "--version":
     print("LLMProbe \(LLMProbeVersion.short)")
 
 case "list-sources":
+    validate(options, command: "list-sources", flags: [])
     for source in ConfigDiscovery.knownSources() {
         let present = source.path == "process environment" || source.path == "127.0.0.1" || PathTools.isReadableFile(source.path)
         let mark = present ? "found" : "—"
@@ -287,6 +312,7 @@ case "list-sources":
     }
 
 case "selftest":
+    validate(options, command: "selftest", flags: ["json"])
     // Verifies the offline half of the engine (parsing, redaction, budgeting,
     // error classification). No network, no credentials, nothing leaves the Mac.
     let report = SelfTest.run()
@@ -308,6 +334,7 @@ case "selftest":
     exit(report.passed ? 0 : 1)
 
 case "discover":
+    validate(options, command: "discover", flags: ["json", "no-local", "no-env"])
     let result = await ConfigDiscovery.scan(
         includeLocalServers: !options.has("no-local"),
         includeEnvironment: !options.has("no-env")
@@ -357,6 +384,7 @@ case "discover":
     print("")
 
 case "import":
+    validate(options, command: "import", flags: ["no-local", "no-env"])
     // Persists everything discovery finds into the same state file the app uses,
     // so the GUI opens with the machine's real configuration already loaded.
     let result = await ConfigDiscovery.scan(
@@ -380,6 +408,12 @@ case "import":
     exit(saved ? 0 : 2)
 
 case "probe":
+    validate(
+        options,
+        command: "probe",
+        flags: ["json", "save", "all", "context-search"],
+        values: ["url", "model", "wire", "key", "key-env", "plan", "index", "samples", "timeout", "context-upper", "name", "id"]
+    )
     let selectedPlan = plan(from: options)
     var state = EndpointStoreFile.load()
     var targets: [ProbeEndpoint] = []

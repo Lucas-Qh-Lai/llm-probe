@@ -1030,16 +1030,10 @@ public final class ProbeEngine: @unchecked Sendable {
     /// tokens are generated.
     private func validationRequest(_ spec: HTTPRequestSpec, state: RunState) async -> ValidationResult {
         let stream = client.stream(spec)
-        var sse = SSEDecoder()
-        var sawFirstByte = false
         do {
-            for try await chunk in stream.chunks {
-                if !sawFirstByte {
-                    sawFirstByte = true
-                    stream.cancel()
-                    break
-                }
-                _ = sse.ingest(chunk.data)
+            for try await _ in stream.chunks {
+                stream.cancel()
+                return ValidationResult(accepted: true, answer: nil, failure: nil)
             }
         } catch let error as HTTPStreamBodyError {
             let classified = ErrorClassifier.classify(status: error.summary.status, body: error.body, headers: error.summary.headers)
@@ -1049,9 +1043,6 @@ public final class ProbeEngine: @unchecked Sendable {
             }
             return ValidationResult(accepted: false, answer: nil, failure: classified.failure)
         } catch {
-            if sawFirstByte {
-                return ValidationResult(accepted: true, answer: nil, failure: nil)
-            }
             return ValidationResult(accepted: false, answer: nil, failure: Self.failure(from: error))
         }
         return ValidationResult(accepted: true, answer: nil, failure: nil)

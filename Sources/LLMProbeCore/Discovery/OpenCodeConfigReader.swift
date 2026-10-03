@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads opencode configuration (`~/.config/opencode/opencode.json` plus the
+/// Reads OpenCode configuration (`~/.config/opencode/opencode.json` plus the
 /// credential store in `~/.local/share/opencode/auth.json`).
 public enum OpenCodeConfigReader {
     public static func read(environment: [String: String] = ProcessInfo.processInfo.environment) -> (endpoints: [ProbeEndpoint], source: DiscoverySource) {
@@ -9,7 +9,7 @@ public enum OpenCodeConfigReader {
             ?? home + "/.config/opencode/opencode.json"
         let alternate = home + "/.opencode/opencode.json"
         let identifier = "opencode"
-        let name = "opencode"
+        let name = "OpenCode"
 
         var path = configPath
         if !PathTools.isReadableFile(path), PathTools.isReadableFile(alternate) { path = alternate }

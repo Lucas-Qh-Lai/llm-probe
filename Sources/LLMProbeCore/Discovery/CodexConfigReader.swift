@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads OpenAI Codex CLI / IDE configuration (`~/.codex/config.toml`).
+/// Reads Codex CLI / IDE configuration (`~/.codex/config.toml`).
 ///
 /// The parsing entry point is shared with the CC Switch reader, which stores an
 /// entire Codex `config.toml` as a string inside its SQLite database.
@@ -15,7 +15,7 @@ public enum CodexConfigReader {
     public static func read(environment: [String: String] = ProcessInfo.processInfo.environment) -> (endpoints: [ProbeEndpoint], source: DiscoverySource) {
         let path = configPath(environment: environment)
         let identifier = "codex"
-        let name = "OpenAI Codex"
+        let name = "Codex CLI"
         guard PathTools.isReadableFile(path) else {
             return ([], DiscoverySource(id: identifier, name: name, path: path, status: .notFound))
         }

@@ -21,7 +21,7 @@
 设备环境：只有 Command Line Tools，没有 Xcode，不要安装 Xcode。
 验证方式一律用 `swift build` + `swift run llmprobe selftest`（不要用 swift test）。
 
-当前状态：引擎 / CLI / macOS GUI 都已实现，32/32 自检通过，隐私门禁通过，
+当前状态：引擎 / CLI / macOS GUI 都已实现，40/40 自检通过，隐私门禁通过，
 但有一个【未解决的 GUI 窗口 bug】：app 启动后有时永远不出现窗口（进程活着、
 NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）。
 这个 bug 直接阻塞了剩下 3 张 README 截图的拍摄，必须先修。
@@ -91,12 +91,12 @@ NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）�
 ### 2.2 功能实现情况
 
 - **5 种协议适配器**：`openai-chat`、`openai-responses`、`anthropic-messages`、`google-gemini`、`ollama-chat`。
-- **25 种厂商预设 + custom**（OpenAI / Anthropic / Google / Azure / OpenRouter / DeepSeek / Moonshot / 智谱 / DashScope / SiliconFlow / Groq / Mistral / xAI / Together / Fireworks / Perplexity / Cerebras / Ollama / LM Studio / MLX / vLLM / LiteLLM / One API / Command Code / Custom）。
+- **28 种厂商预设 + custom**（OpenAI / Anthropic / Google / Azure / OpenRouter / DeepSeek / Moonshot / 智谱 / DashScope / MiniMax / Xiaomi MiMo / iFlow / SiliconFlow / Groq / Mistral / xAI / Together / Fireworks / Perplexity / Cerebras / Ollama / LM Studio / MLX / vLLM / LiteLLM / One API / Command Code / Custom）。
 - **11 个探针**：可达性、模型目录、补全、流式速度（TTFT + tok/s + 多次取中位数）、工具调用、并行工具调用、视觉、结构化输出、上下文窗口、最大输出 token、推理通道、嵌入。
 - **三档计划**：`free`（0 completion token，2000 token 预算）/ `quick`（5000）/ `deep`（60000，含 payload 上下文搜索）。
 - **错误分类器**：鉴权 / 权限 / 模型不存在 / 请求无效 / 上下文超限 / 限流 / 额度 / 上游 5xx / 超时 / 传输 / 解码，并能从报错文本里提取**真实**上限（例如 `max_tokens is too large: 999999 … supports at most 8192` 取 8192，而不是被拒的 999999）。
 - **能力证据分级 + 缓存**：`supported / partial / unsupported / unknown` + 来源（probe / metadata / local config / heuristic），重复测试不重复花 token。
-- **自动探测 9 个来源**：CC Switch（`~/.cc-switch/cc-switch.db`，`?mode=ro` **只读** SQLite，覆盖 codex / claude / claude-desktop / gemini / opencode / hermes 六种 app_type）、Codex（自带 MiniTOML，`CODEX_HOME` 感知）、Claude Code、opencode、Gemini CLI、Continue、Aider、环境变量、本机端口扫描（11434/1234/8000/8080/4000/3000/3050/5000）。
+- **自动探测 23 个来源**：CC Switch（`~/.cc-switch/cc-switch.db`，`?mode=ro` **只读** SQLite，覆盖 codex / claude / claude-desktop / gemini / OpenCode / hermes 六种 app_type）、Codex CLI（自带 MiniTOML，`CODEX_HOME` 感知）、Claude Code、OpenCode、Gemini CLI、Continue、Aider、环境变量、本机端口扫描（11434/1234/8000/8080/4000/3000/3050/5000）。
 - **CLI 子命令**：`discover` / `probe` / `import` / `list-sources` / `selftest` / `version` / `help`，支持 `--json`、退出码 = 最差结论（0 健康 / 1 降级或异常 / 2 用法错误）。
 - **GUI**：SwiftUI 侧边栏 + 详情 + 5 张指标卡 + 能力矩阵 + 探针列表 + 自动探测面板 + 端点编辑器 + 速度趋势图（Charts）+ 原生设置窗口（⌘,，含语言 / 数据 / 关于三个 Tab）。
 - **关于页面**（本轮新增）：GitHub 仓库链接、作者 `Lucas-Qh-Lai`、GitHub Sponsors 捐助入口、MIT 说明。
@@ -107,17 +107,17 @@ NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）�
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 编译 | `swift build` | `Build complete` |
-| 离线自检 | `swift run llmprobe selftest` | **32/32 passed** |
-| 隐私门禁 | `./scripts/check_privacy.sh` | `privacy check clean (77 files, mode=tree)` |
+| 离线自检 | `swift run llmprobe selftest` | **40/40 passed** |
+| 隐私门禁 | `./scripts/check_privacy.sh` | `privacy check clean (tree mode)` |
 | 打包 App | `./scripts/build_app.sh release` | 输出 `signature verified`，安装到 `~/Applications/LLMProbe.app` |
 | 签名校验 | `codesign --verify --strict ~/Applications/LLMProbe.app` | 通过（迁移到新路径后重新验证过） |
 | CLI 英文化 | 中文系统下 `llmprobe probe …` | 输出全英文（`FAIL Reachability …` / `Verdict: Unhealthy`） |
-| Release 包 | `./scripts/package_release.sh` | `dist/LLMProbe-0.1.0.zip`（约 1.0M）+ `.sha256`，解压后签名仍有效 |
+| Release 包 | `./scripts/package_release.sh` | 双架构：`LLMProbe-0.1.0-macOS-ARM64.zip` 与 `LLMProbe-0.1.0-macOS-Intel-x86_64.zip`，各附 `.sha256` 与 `SHA256SUMS`，解压后签名仍有效 |
 | Git | `git log --oneline` | `2dee2cd chore: import LLMProbe 0.1.0 as a local git project` |
 
 ### 2.4 截图现状
 
-- 已有：`docs/images/screenshot-main.png`（中文主界面，2582×1750，已剥离元数据，内容是虚构 demo 数据）。
+- 已有：`docs/images/screenshot-main.png`、`screenshot-main-en.png`、`screenshot-discovery.png`、`screenshot-settings.png`（均已剥离元数据，内容是虚构 demo 数据）。
 - 已有：`docs/images/AppIcon.png`（1024×1024）、`AppIcon.icns`。
 - **缺**：`screenshot-main-en.png`、`screenshot-discovery.png`、`screenshot-settings.png`（README 已经引用这三个文件名，现在链接是断的）。
 - 截图流水线：`scripts/capture_screenshots.sh` + `scripts/demo_server.py`（虚构服务，模型名 `demo-small-1` / `demo-reasoner-1` / `demo-large-1`，Base URL `http://127.0.0.1:8899/v1`，端点名 `Acme AI Gateway · …`）。脚本会在 `$TMPDIR` 建隔离 state dir，并在拍完后校验像素宽度、剥离元数据。
@@ -126,8 +126,8 @@ NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）�
 
 - 关于页加 GitHub / Sponsors / 作者（`Sources/LLMProbeApp/Views/SettingsView.swift`）。
 - 语言解析抽出可测重载 `LanguageSettings.resolve(_:preferredLanguages:)`，新增自检 `localization.follows-the-system-language`（中文 / 英文 / 日文 / 德文 / 韩文 / 空列表 8 组用例）。
-- CLI 强制英文：移除 `--language`（CLI 不再接受），新增 `LanguageSettings.pinCommandLineLanguage()` 与自检 `cli.prints-english-only`，自检从 30 项 → 32 项。
-- README 中英双文件、CHANGELOG 同步更新（CLI 英文说明、系统语言默认策略、项目地址与支持章节、自检 32 项）。
+- CLI 强制英文：移除 `--language`（CLI 不再接受），新增 `LanguageSettings.pinCommandLineLanguage()` 与自检 `cli.prints-english-only`，自检从 30 项 → 40 项。
+- README 中英双文件、CHANGELOG 同步更新（CLI 英文说明、系统语言默认策略、项目地址与支持章节、自检 40 项）。
 - 工程从 `~/Documents/Codex/2026-10-03/x20-1-a-api-openai-anthropic/outputs/llm-probe` 迁移到 `~/Documents/编程/LLMProbe`，并在此建立本地 Git 工程。
 
 ---
@@ -200,9 +200,32 @@ NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）�
 
 - `swift build` 有两条警告：`Sources/LLMProbeApp/Support/AppModel.swift:209` 的 `[SendableClosureCaptures]`（在 Swift 6 语言模式下会变成错误），以及 `ProbeEngine.swift` 附近一条 "no 'async' operations occur within 'await' expression"。都不影响当前构建，但发布前值得清掉。
 - `AppDelegate` 里保留了 `LLM_PROBE_WINDOW_DEBUG` / `LLM_PROBE_DEBUG_LOG` 追踪代码（无害，专门为查这个 bug 留的，建议修好后再决定是否删除）。
-- 迁移后 `.build` 缓存被清过一次（旧路径的绝对路径被烤进 module cache，会报 `missing required module 'SwiftShims'`），所以现在需要重新构建；`docs/`、`dist/`、`.build/` 里 `dist` 与 `.build` 都被 `.gitignore` 排除，`dist/LLMProbe-0.1.0.zip` 仍在本地磁盘上（未提交）。
+- 迁移后 `.build` 缓存被清过一次（旧路径的绝对路径被烤进 module cache，会报 `missing required module 'SwiftShims'`），所以现在需要重新构建；`docs/`、`dist/`、`.build/` 里 `dist` 与 `.build` 都被 `.gitignore` 排除，旧的单一架构 `dist/LLMProbe-0.1.0.zip` 已由发布脚本清理，最终发布只保留双架构 zip。
 
 ---
+
+## 3.9 交接后当前状态（2026-10-03）
+
+本次继续开发已完成：
+
+- 窗口 bug：共享 `AppModel` + 延迟 `NSHostingController` 兜底；正常路径与强制兜底路径均已连续实测，不重复开窗。
+- 新增 Agent 自动识别：DeepSeek Harness、Qwen Code、Kimi Code CLI、MiniMax Code、ZCode、MiMo Code、iFlow CLI、Trae Agent、GitHub Copilot CLI、Cursor CLI、Amazon Q Developer CLI、Pi、OpenClaw、Hermes Agent；`OpenCode` 名称统一为官方/用户指定大小写。
+- 解析层：JSONC、TOML、YAML 子集与通用 provider/model 提取；新增 8 项离线自检，当前基线 **40/40**。
+- UI：自定义菜单统一英文，发现页加入“部分 Agent 工具自动识别配置功能未经过验证，仅供参考”说明；使用 SwiftUI / AppKit 官方组件做布局整理。
+- 文档：README/README.en 增加隐私承诺、支持矩阵、参与开发流程、双架构下载说明。
+- 发布：构建脚本支持 `native` / `arm64` / `x86_64`，Release 计划同时提供 Apple 芯片（ARM64）与 Intel（x86_64）原生包。
+
+### 3.10 继续修复（2026-10-04）
+
+- **空状态压字**（用户截图报告）：`EmptyStateView` 原来用 `ContentUnavailableView` + `.overlay(alignment: .bottom)` 挂支持说明，窗口比理想尺寸矮时说明文字与按钮互相压印。改为单一线性 `VStack`，结构上不可能重叠。
+- **侧边栏空白**：零端点时 `List` 无行、搜索框无内容，整列看起来是坏的。现在换成显式占位视图，底部工具条（自动探测 / 设置 / 添加）始终可达。
+- **窗口最小尺寸守护**：原来的延迟 pin 只在前 8 秒的固定时间点检查。现在额外常驻监听 `NSWindow.didResizeNotification`，任何时刻小于 1080×680 的主窗口都会被修回 1340×880；设置窗、sheet、兜底窗不参与。
+- **CLI `--help` 会真的干活**：`llmprobe import --help` 之前会执行导入并写入真实 `state.json`。现在 `--help` / `-h` 一律只打印用法，并且每个命令都会拒绝自己不认识的选项（`--no-locl`、`--jason`、`list-sources --json`），而不是静默忽略拼写错误。
+- 门禁：`swift build` 零警告、`selftest` 40/40、`check_privacy.sh` clean、`git diff --check` clean；双架构包重新构建并逐个校验签名、架构与 SHA-256。
+- 注意：本次 UI 终检时本机处于锁屏状态（`CGSSessionScreenIsLocked = true`）。锁屏下 `screencapture` / 窗口几何不完全可信，所以「窗口过小」这类结论只用解锁后的截图确认，其余用结构性与自检证据。
+
+剩余工作仅包括最终代码审查、截图终检、隐私门禁、GitHub 推送和 `v0.1.0` Release。
+
 
 ## 4. 剩余工作清单
 
@@ -210,14 +233,14 @@ NSApp.windows 恒为 0、SwiftUI 从不求值 WindowGroup 的 content 闭包）�
 2. **补 3 张截图**：`main-en` / `discovery` / `settings`；之后必须
    `python3 scripts/strip_image_metadata.py docs/images/screenshot-*.png` → `./scripts/check_privacy.sh` → 逐张人工看图确认只有虚构数据。
 3. **推送 GitHub**（需要用户确认仓库名与 Public/Private；`gh` 已登录 `Lucas-Qh-Lai`，仓库名先前查过 `llm-probe` 未被占用）。
-4. **发 Release `v0.1.0`**：附 `dist/LLMProbe-0.1.0.zip` 与 `.sha256`；release 累积，不要删旧版 / 旧 tag。
+4. **发 Release `v0.1.0`**：附 Apple 芯片（ARM64）与 Intel（x86_64）两个 zip、各自 `.sha256` 和 `SHA256SUMS`；release 累积，不要删旧版 / 旧 tag。
 5. （可选）清理上面的编译警告；确认 README 里的截图链接都能渲染。
 
 ---
 
 ## 5. 环境与操作注意事项（踩过的坑）
 
-- **没有 Xcode**：`swift test` / XCTest 不可用，用 `swift run llmprobe selftest` 代替（32 项）。不要在没问用户的情况下装 Xcode。
+- **没有 Xcode**：`swift test` / XCTest 不可用，用 `swift run llmprobe selftest` 代替（40 项）。不要在没问用户的情况下装 Xcode。
 - **不要在云同步目录里直接组装 App bundle**：会让 ad-hoc 签名失效、被 taskgated 杀掉。必须走 `scripts/build_app.sh`（在 `$TMPDIR` 组装 + 签名 + `ditto` 到 `~/Applications`）。
 - 迁移 / 复制工程目录后，`.build` 会因绝对路径失效：`find .build -depth -delete` 后重新 `swift build`。
 - macOS 没有 GNU `timeout`；`du` 不支持 `--exclude`。
@@ -254,7 +277,7 @@ LLMProbe/
 │   │   ├── Discovery/CCSwitchReader.swift   ← CC Switch 只读 SQLite 读取
 │   │   ├── Discovery/CodexConfigReader.swift
 │   │   ├── Probes/ProbeEngine.swift          ← 11 个探针与三档计划
-│   │   └── Support/SelfTest.swift            ← 32 项离线自检
+│   │   └── Support/SelfTest.swift            ← 40 项离线自检
 │   ├── llmprobe/main.swift      CLI 入口（英文输出，子命令解析）
 │   └── LLMProbeApp/             SwiftUI GUI
 │       ├── AppMain.swift                    ← WindowGroup / Settings scene（窗口 bug 相关）

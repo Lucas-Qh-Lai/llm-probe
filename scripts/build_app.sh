@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds LLMProbe.app: a self-contained, ad-hoc signed macOS application bundle.
 #
-# Usage: scripts/build_app.sh [debug|release] [output-directory]
+# Usage: scripts/build_app.sh [debug|release] [output-directory] [native|arm64|x86_64]
 set -euo pipefail
 
 CONFIGURATION="${1:-release}"
@@ -9,14 +9,24 @@ CONFIGURATION="${1:-release}"
 # inside a cloud-synced folder, the file provider re-adds Finder metadata and the
 # ad-hoc signature stops verifying, which makes macOS kill the app on launch.
 OUTPUT_DIR="${2:-$HOME/Applications}"
+TARGET_ARCH="${3:-native}"
+case "$TARGET_ARCH" in
+  native|arm64|x86_64) ;;
+  *) echo "Unsupported architecture: $TARGET_ARCH (use native, arm64 or x86_64)" >&2; exit 2 ;;
+esac
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "==> Building $CONFIGURATION binary"
-swift build -c "$CONFIGURATION" --product LLMProbeApp
+BUILD_ARGS=(-c "$CONFIGURATION")
+if [ "$TARGET_ARCH" != "native" ]; then
+  BUILD_ARGS+=(--arch "$TARGET_ARCH")
+fi
 
-BIN_PATH="$(swift build -c "$CONFIGURATION" --show-bin-path)"
+echo "==> Building $CONFIGURATION binary for $TARGET_ARCH"
+swift build "${BUILD_ARGS[@]}" --product LLMProbeApp
+
+BIN_PATH="$(swift build "${BUILD_ARGS[@]}" --show-bin-path)"
 case "$OUTPUT_DIR" in
   /*) APP_PARENT="$OUTPUT_DIR" ;;
   *)  APP_PARENT="$ROOT/$OUTPUT_DIR" ;;
@@ -33,6 +43,17 @@ CONTENTS="$STAGED_APP/Contents"
 echo "==> Assembling $STAGED_APP"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 cp -X "$BIN_PATH/LLMProbeApp" "$CONTENTS/MacOS/LLMProbe"
+
+ACTUAL_ARCHS="$(lipo -archs "$CONTENTS/MacOS/LLMProbe")"
+if [ "$TARGET_ARCH" = "arm64" ] && [ "$ACTUAL_ARCHS" != "arm64" ]; then
+  echo "Architecture mismatch: expected arm64, got $ACTUAL_ARCHS" >&2
+  exit 1
+fi
+if [ "$TARGET_ARCH" = "x86_64" ] && [ "$ACTUAL_ARCHS" != "x86_64" ]; then
+  echo "Architecture mismatch: expected x86_64, got $ACTUAL_ARCHS" >&2
+  exit 1
+fi
+echo "    binary architecture: $ACTUAL_ARCHS"
 
 if [ ! -f "$ROOT/docs/images/AppIcon.icns" ]; then
   echo "==> Generating app icon"

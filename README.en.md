@@ -8,7 +8,7 @@
   <b>A local health check for LLM upstreams</b><br>
   One click or one command answers four questions: is the upstream alive? how fast is it?<br>
   how big is its context? and which capabilities does it really have?<br>
-  Native macOS GUI (SwiftUI) + full CLI · bilingual · fully offline · MIT
+  Native macOS GUI (SwiftUI) + full CLI · bilingual · local configuration parsing · MIT
 </p>
 
 <p align="center">
@@ -21,16 +21,20 @@
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue">
-  <img alt="Runs offline" src="https://img.shields.io/badge/runs-100%25%20offline-4c1">
+  <img alt="No telemetry" src="https://img.shields.io/badge/no-telemetry-4c1">
 </p>
 
 > 中文版：[README.md](README.md)
+
+> **Privacy promise: apart from probe requests that you explicitly send to a selected LLM upstream, LLMProbe runs entirely on this Mac.**
+> It never uploads agent configuration, endpoints, model names, credentials or usage data. There is no telemetry, crash reporting, update check or phoning home.
+> The project is MIT-licensed and fully source-available for review, reproduction and independent builds.
 
 ---
 
 ## What this is
 
-If you switch LLM upstreams with CC Switch / Codex / Claude Code / opencode, you have probably hit at least one of these:
+If you switch LLM upstreams with CC Switch / Codex CLI / Claude Code / OpenCode, you have probably hit at least one of these:
 
 - You edited the config and switched the proxy, but you do not actually know whether it **works**;
 - A proxy advertises "tool calling / 1M context / vision" and **falls over the first time you use it**;
@@ -74,11 +78,11 @@ It has two dependencies: your Mac, and the upstream you want to test. No account
 | **Context window** | Reads catalog metadata first (**0 tokens**); can measure the real limit with an opt-in payload search |
 | **Max output tokens** | Uses the declared value, otherwise extracts the true limit from a deliberately-too-large request (**0 completion tokens**) |
 | **Capability matrix** | Tool calling, parallel tools, vision, audio in/out, structured output, JSON mode, reasoning, prompt caching, system prompt, seeds, logprobs, embeddings, streaming |
-| **Config discovery** | CC Switch, Codex, Claude Code, opencode, Gemini CLI, Continue, Aider, environment variables, local model servers — merged and de-duplicated |
+| **Config discovery** | CC Switch, Codex CLI, Claude Code, OpenCode, Gemini CLI, Continue, Aider, environment variables, local model servers — merged and de-duplicated |
 | **Bilingual** | GUI fully bilingual, switchable in Settings with no restart; defaults to the system language (Chinese Mac → Chinese, English Mac → English, anything else → English) |
 | **GUI + CLI** | One engine. SwiftUI app (native controls, menus, Settings window) plus a scriptable CLI |
 | **Local only** | No telemetry, no uploads, no cloud validation; state file `0600`; every outbound string is redacted |
-| **Many vendors** | 25 vendor presets and 5 protocol adapters; any OpenAI-compatible endpoint works manually |
+| **Many vendors** | 28 vendor presets and 5 protocol adapters; any OpenAI-compatible endpoint works manually |
 | **Token discipline** | Three plans, the cheapest one spends **0 completion tokens**; capability findings are cached so repeat runs are free |
 
 ---
@@ -87,9 +91,20 @@ It has two dependencies: your Mac, and the upstream you want to test. No account
 
 ### Option 1: download the app (recommended)
 
-1. Grab `LLMProbe-<version>.zip` from [Releases](https://github.com/Lucas-Qh-Lai/llm-probe/releases);
+Releases include two native macOS builds. Choose the one matching your processor:
+
+| Mac type | Download | Notes |
+| --- | --- | --- |
+| **Apple silicon (ARM64)** | `LLMProbe-<version>-macOS-ARM64.zip` | M1, M2, M3, M4 and newer Apple silicon Macs |
+| **Intel (x86_64)** | `LLMProbe-<version>-macOS-Intel-x86_64.zip` | Macs with an Intel Core processor |
+
+If unsure, open **Apple menu → About This Mac**. An M-series chip means the Apple silicon build; an Intel Core processor means the Intel build. Both are native builds for their target architecture and do not rely on Rosetta translation.
+
+1. Download the matching zip from [Releases](https://github.com/Lucas-Qh-Lai/llm-probe/releases);
 2. Unzip and drag `LLMProbe.app` into Applications;
 3. If Gatekeeper complains (builds are ad-hoc signed, not notarised), right-click the icon → **Open** → **Open** again.
+
+Each zip includes a `.sha256` file, plus a combined `LLMProbe-<version>-SHA256SUMS` for verification.
 
 ### Option 2: build from source
 
@@ -100,7 +115,8 @@ xcode-select --install            # if the tools are missing
 git clone https://github.com/Lucas-Qh-Lai/llm-probe.git
 cd llm-probe
 
-./scripts/build_app.sh release    # builds and installs ~/Applications/LLMProbe.app
+./scripts/build_app.sh release    # builds the current architecture and installs ~/Applications/LLMProbe.app
+./scripts/build_app.sh release ~/Applications x86_64   # cross-build Intel (x86_64) when needed
 ./scripts/install_cli.sh          # installs the CLI into /usr/local/bin (falls back to ~/.local/bin)
 ```
 
@@ -297,9 +313,9 @@ fi
 
 The wire API is inferred automatically (hostname, configuration shape, model id convention) and can always be forced with `--wire`.
 
-### Vendor presets (25)
+### Vendor presets (28)
 
-OpenAI · Anthropic · Google Gemini · Azure OpenAI · OpenRouter · DeepSeek · Moonshot / Kimi · Zhipu GLM · Alibaba DashScope · SiliconFlow · Groq · Mistral · xAI · Together AI · Fireworks AI · Perplexity · Cerebras · Ollama · LM Studio · MLX server · vLLM · LiteLLM · One API / New API · Command Code · Custom
+OpenAI · Anthropic · Google Gemini · Azure OpenAI · OpenRouter · DeepSeek · Moonshot / Kimi · Zhipu GLM · Alibaba DashScope · MiniMax · Xiaomi MiMo · iFlow · SiliconFlow · Groq · Mistral · xAI · Together AI · Fireworks AI · Perplexity · Cerebras · Ollama · LM Studio · MLX server · vLLM · LiteLLM · One API / New API · Command Code · Custom
 
 A preset only fills in the default base URL and the common environment variable names (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`…). **Any** OpenAI-compatible endpoint can be entered as Custom.
 
@@ -343,24 +359,43 @@ A preset only fills in the default base URL and the common environment variable 
 
 ## Automatic discovery: what it reads
 
-| Source | Path | What is read |
+Every reader is **read-only**: LLMProbe never edits, migrates or “repairs” another tool's configuration.
+
+| Agent tool | Primary path | What it reads |
 | --- | --- | --- |
-| **CC Switch** | `~/.cc-switch/cc-switch.db` | **SQLite opened read-only**, one row per provider slot across six `app_type`s — `codex` / `claude` / `claude-desktop` / `gemini` / `opencode` / `hermes` — resolving base URL, model, wire API and credential source, flagging the active one |
-| OpenAI Codex | `~/.codex/config.toml` (honours `CODEX_HOME`) | Custom providers, `base_url`, wire API, model, `env_key` |
-| Claude Code | `~/.claude/settings.json` | `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` style env overrides |
-| opencode | `~/.config/opencode/opencode.json` | Provider definitions, `options.baseURL`, model table |
-| Gemini CLI | `~/.gemini/settings.json` | Custom endpoints and models |
-| Continue | `~/.continue/config.json` | Providers and apiBase |
-| Aider | `~/.aider.conf.yml` | OpenAI-compatible base URL and model |
-| Environment | current process env | Common `*_API_KEY` / `*_BASE_URL` variables |
-| Local servers | `127.0.0.1` | Port scan for the usual suspects (11434 / 1234 / 8080 / 8000 / 4000 / 3000 / 3050 …) |
+| CC Switch | `~/.cc-switch/cc-switch.db` | Providers, wire protocols, models and active rows via read-only SQLite |
+| Codex CLI | `~/.codex/config.toml` (respects `CODEX_HOME`) | Custom providers, `base_url`, wire API, models and `env_key` |
+| Claude Code | `~/.claude/settings.json` | `ANTHROPIC_BASE_URL`, credential sources and model |
+| OpenCode | `~/.config/opencode/opencode.json` | Providers, `options.baseURL`, model tables and local auth sources |
+| Gemini CLI | `~/.gemini/settings.json` | Custom endpoints, models and `.env` |
+| GitHub Copilot CLI | `~/.copilot/config.json` + `COPILOT_PROVIDER_*` | BYOK base URL, protocol, model and credential source |
+| Cursor CLI | `~/.cursor` | Installation status only; the hosted route has no stable public local base URL |
+| Amazon Q Developer CLI | `~/.aws/amazonq` | Installation status only; no guessed Amazon Bedrock endpoint |
+| Qwen Code | `~/.qwen/settings.json` | `modelProviders`, `baseUrl`, `envKey` and models |
+| DeepSeek Harness | `$DSH_HOME/profiles/*/cordis.patch.yml` | Provider routes, protocols, models and `apiKeyEnv` |
+| Kimi Code CLI | `~/.kimi/config.toml` | `providers`, `models`, `base_url` and `api_key` source |
+| MiniMax Code | Common `~/.config/minimax-code` paths | Providers, API formats and models (automatic paths not fully verified) |
+| ZCode | Common `~/.zcode` / Application Support paths | Providers, OpenAI / Anthropic base URLs and models (automatic paths not fully verified) |
+| MiMo Code | `~/.config/mimocode/mimocode.jsonc` | `provider`, `baseURL`, `apiKey` and model mapping |
+| iFlow CLI | `~/.iflow/settings.json` | `baseUrl`, `modelName` and `apiKey` source |
+| Trae Agent | Common `trae_config.yaml` paths | `model_providers`, `models` and `base_url` (automatic paths not fully verified) |
+| Pi | `~/.pi/agent/models.json` | `providers`, `baseUrl`, `api` and `models` |
+| OpenClaw | `~/.openclaw/openclaw.json` and agent `models.json` | `models.providers`, protocols, model capabilities and context metadata |
+| Hermes Agent | `~/.hermes/config.yaml` | `model`, `providers` / `custom_providers`, `base_url` and `api_mode` |
+| Continue | `~/.continue/config.json` | Providers and `apiBase` |
+| aider | `~/.aider.conf.yml` | OpenAI-compatible base URL and model |
+| Environment | Current process environment | Common `*_API_KEY` / `*_BASE_URL` / `*_MODEL` variables |
+| Local services | `127.0.0.1` | Common local model-server ports |
+
+> **Detection disclaimer: automatic configuration detection for some agent tools is unverified and provided for reference only.**
+> Paths or versioned schemas may change, especially for `MiniMax Code`, `ZCode` and `Trae Agent`. Review imported endpoints before probing. Hosted routes that cannot be mapped reliably are marked skipped instead of guessing a base URL.
 
 ### About CC Switch
 
 CC Switch is the **first** source this tool reads, because on most Macs it is the single source of truth for "which upstream am I actually using right now". A few deliberate constraints:
 
 - The database is **always opened `?mode=ro`** and only ever queried with `SELECT`; LLMProbe never writes, migrates or mutates CC Switch data;
-- `settings_config` JSON is parsed per `app_type`, because each app stores a different shape (Codex keeps a whole `config.toml`, Claude keeps an `env` block, opencode keeps `options.baseURL`, hermes is flat);
+- `settings_config` JSON is parsed per `app_type`, because each app stores a different shape (Codex keeps a whole `config.toml`, Claude keeps an `env` block, OpenCode keeps `options.baseURL`, hermes is flat);
 - Rows with `is_current` are tagged `active`, so the list shows which one is live;
 - Credentials are recorded as a **source** (env var name / configured value) and always go through `Redactor`; only "configured" is ever displayed.
 
@@ -370,14 +405,17 @@ CC Switch is the **first** source this tool reads, because on most Macs it is th
 
 ## Privacy and security
 
-- **Fully local** — no telemetry, no analytics, no crash reporting, no update check. The only network traffic is the upstreams you ask it to probe;
-- **Read-only on other tools' configs** — no reader ever writes; CC Switch's SQLite is read-only;
-- **Redacted exits** — terminal output, exported reports and JSON all pass through `Redactor`; secrets show as configured/not configured;
-- **State file `0600`** — `~/Library/Application Support/LLMProbe/state.json` is readable only by you;
-- **Never writes into other tools' directories** — nothing is written to `~/.codex`, `~/.claude` or `~/.cc-switch`;
-- **Repository self-check** — `scripts/check_privacy.sh` scans for credential shapes, machine paths and screenshot metadata before every commit, wired into `.githooks/pre-commit`.
+> **Promise in one sentence: apart from active probe requests sent to the upstream you choose, LLMProbe runs locally and never uploads configuration.**
 
-Verify the "no phoning home" claim yourself while it runs:
+- **No configuration upload** — agent configs, endpoints, model names, credential sources and reports stay in local memory/state;
+- **No telemetry** — no analytics, crash reporting, update checks or other phone-home calls;
+- **Third-party configs are read-only** — CC Switch SQLite is always opened with `?mode=ro`;
+- **Redacted exits** — terminal output, exported reports and JSON pass through `Redactor`;
+- **State file `0600`** — `~/Library/Application Support/LLMProbe/state.json` is readable only by the current user;
+- **Open source for audit** — source, build scripts, privacy scanner and screenshot pipeline are all available under MIT;
+- **The one exception** — running a probe sends its test prompt and required request body to the upstream you explicitly select; configuration itself is not uploaded to LLMProbe or any third-party service.
+
+Verify runtime network connections yourself:
 
 ```bash
 sudo lsof -i -n -P | grep LLMProbe
@@ -402,13 +440,42 @@ sudo lsof -i -n -P | grep LLMProbe
 ```bash
 swift build                              # everything
 swift build --product llmprobe           # CLI only (fast)
-swift run llmprobe selftest              # offline self test — must stay 32/32 green
+swift run llmprobe selftest              # offline self test — must stay 40/40 green
 swift test                               # needs full Xcode; use selftest without it
 ./scripts/build_app.sh release           # build + install ~/Applications/LLMProbe.app
 ./scripts/install_cli.sh                 # install the CLI
 ./scripts/check_privacy.sh               # privacy gate before committing
 ./scripts/capture_screenshots.sh         # regenerate docs screenshots from demo data (needs an unlocked screen)
 ```
+
+### Contributing and updates
+
+Bug fixes, agent configuration adapters, UI/copy improvements, tests, documentation and real platform reports are all welcome. Open an Issue first to describe the problem or proposal; larger refactors, compatibility breaks and release-process changes should be agreed before implementation.
+
+#### Recommended workflow
+
+1. **Pick a concrete task** — claim an existing Issue or open one with reproduction steps and expected behavior. Report security issues through GitHub Private Vulnerability Reporting, not a public Issue.
+2. **Fork and branch** — use `fix/...`, `feature/...`, `discovery/...` or `docs/...`; do not push directly to protected branches.
+3. **Build and self-test locally** — run at least `swift build` and `swift run llmprobe selftest`. The current baseline is **40/40 green**; every new pure parsing/classification rule needs a `SelfTest.Check`.
+4. **Run the privacy gate** — `./scripts/check_privacy.sh` must be clean. Never commit real base URLs, model names, credentials, cookies, `state.json`, `.app` bundles or machine-specific absolute paths.
+5. **Open a Pull Request** — explain what changed, why, how it was tested and which platforms are affected. UI changes need before/after screenshots; discovery changes need fictional fixture results. PRs are checked for build, self-test, privacy, copy and regressions.
+6. **Merge and release** — maintainers review, merge, update version/docs/release notes. Releases are cumulative; old tags and releases are never deleted.
+
+#### Especially welcome contributions
+
+- New read-only agent-harness readers using the `ConfigReader` / `AgentConfigExtractor` shape;
+- Real Windows/Linux hardware results, not compile-only claims;
+- Product-name capitalization, terminology, bilingual copy and README corrections;
+- SwiftUI/AppKit-native UI improvements, accessibility, keyboard support and Reduce Motion;
+- Offline parser fixtures, protocol-adapter tests and privacy regressions.
+
+#### Adapter contribution rules
+
+- Consult official documentation and record paths, field names and official product spelling;
+- Do not execute the discovered tool, write its config directory or print plaintext secrets;
+- Return `notFound` / `unsupported` when parsing fails; never guess a base URL;
+- Mark unverified paths or schemas as “unverified and provided for reference only”;
+- Add `SelfTest` coverage for new pure functions and use only `Acme` / `demo-*` data in screenshots.
 
 ### Layout
 
@@ -419,7 +486,7 @@ Sources/
     Net/                 HTTP client, SSE decoder, error classifier
     Providers/           5 protocol adapters + vendor registry + endpoint inference
     Probes/              the 11 probes and their prompts
-    Discovery/           9 local config readers (including CC Switch's read-only SQLite)
+    Discovery/           23 discovery sources (including CC Switch's read-only SQLite)
     Support/             redaction, token estimation, cache, state store, i18n, self test
   llmprobe/              CLI (discover / probe / import / list-sources / selftest)
   LLMProbeApp/           SwiftUI app (sidebar, detail, editor, discovery sheet, settings)
@@ -430,7 +497,7 @@ docs/images/             screenshots and app icon
 
 ### What the offline self test covers
 
-`llmprobe selftest` touches no network and no credential. Its 32 checks cover: redaction rules, token estimation, TOML parsing, SSE framing, endpoint de-duplication and local-host detection, wire-API inference, the error classifier (including pulling a context limit out of an error string), plan budgets, capability cache precedence, state file round-trip, modality coverage, bilingual switching and full enum coverage, launch-argument parsing, the system-language mapping (Chinese → Chinese, English → English, anything else → English) and the English-only CLI contract.
+`llmprobe selftest` touches no network and no credential. Its 40 checks cover redaction, token estimation, JSONC / TOML / YAML-subset parsing (including indentless sequences), multi-agent provider/model extraction, product-name capitalization, SSE framing, endpoint de-duplication and local-host detection, wire-API inference, error classification (including limit extraction), plan budgets, capability cache precedence, state round-trip, modality coverage, bilingual/enumeration coverage, launch arguments, transport-message localization, system-language mapping and the English-only CLI contract.
 
 ---
 

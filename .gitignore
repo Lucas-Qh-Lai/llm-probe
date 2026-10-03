@@ -20,6 +20,10 @@ reports/
 .env.*
 !.env.example
 
+# Python
+__pycache__/
+*.pyc
+
 # macOS
 .DS_Store
 ._*

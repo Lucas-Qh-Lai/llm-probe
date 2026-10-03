@@ -207,7 +207,7 @@ capture "$OUT/screenshot-main-en.png" "$MIN_WIDTH_MAIN" largest \
 capture "$OUT/screenshot-discovery.png" "$MIN_WIDTH_SHEET" largest \
   --state-dir "$DEMO_HOME" --demo-discovery --show-discovery --language zh
 capture "$OUT/screenshot-settings.png" "$MIN_WIDTH_SHEET" settings \
-  --state-dir "$DEMO_HOME" --language zh --show-settings
+  --state-dir "$DEMO_HOME" --demo-discovery --language zh --show-settings
 
 echo "==> Stripping capture metadata"
 python3 "$ROOT/scripts/strip_image_metadata.py" "$OUT"/screenshot-*.png

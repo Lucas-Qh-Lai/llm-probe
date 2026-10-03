@@ -7,7 +7,7 @@
 <p align="center">
   <b>本地运行的 LLM 上游体检工具</b><br>
   一条命令 / 一次点击，回答四个问题：上游活着吗？多快？上下文多大？到底支持哪些能力？<br>
-  macOS 原生 GUI（SwiftUI）+ 完整 CLI · 中英双语 · 完全离线 · MIT 开源
+  macOS 原生 GUI（SwiftUI）+ 完整 CLI · 中英双语 · 配置解析完全本地 · MIT 开源
 </p>
 
 <p align="center">
@@ -20,16 +20,20 @@
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue">
-  <img alt="Runs offline" src="https://img.shields.io/badge/%E5%85%A8%E7%A8%8B%E6%9C%AC%E5%9C%B0-%E4%B8%8D%E4%B8%8A%E4%BC%A0%E4%BB%BB%E4%BD%95%E6%95%B0%E6%8D%AE-4c1">
+  <img alt="No telemetry" src="https://img.shields.io/badge/%E6%97%A0%E9%81%A5%E6%B5%8B-%E4%B8%8D%E4%B8%8A%E4%BC%A0%E9%85%8D%E7%BD%AE-4c1">
 </p>
 
 > English version: [README.en.md](README.en.md)
+
+> **隐私承诺：除你主动运行探针时发往所选 LLM 上游的测试请求外，LLMProbe 完全在本机运行。**
+> 它不会上传任何 Agent 配置、端点、模型名、密钥或使用数据；没有遥测、崩溃上报、更新检查或“电话回家”。
+> 项目以 MIT 开源，完整源码可供审查、复现和独立构建。
 
 ---
 
 ## 这是什么
 
-你在用 CC Switch / Codex / Claude Code / opencode 之类的工具切换上游时，大概遇到过这些情况：
+你在用 CC Switch / Codex CLI / Claude Code / OpenCode 之类的工具切换上游时，大概遇到过这些情况：
 
 - 换了中转站，配置文件改完了，但不确定**到底通不通**；
 - 代理声称「支持工具调用 / 1M 上下文 / 视觉」，**实际一用就报错**；
@@ -73,11 +77,11 @@ LLMProbe 就是给这些问题准备的：它读取你本机已有的 Agent 配�
 | **上下文长度** | 优先读模型目录元数据（**0 token**）；需要实证时用 payload 搜索实测上限 |
 | **最大输出 token** | 优先读声明值；没有声明时用一次「故意超限」的请求，从上游报错里读出真实上限（**0 completion token**） |
 | **能力矩阵** | 工具调用、并行工具调用、视觉、音频输入/输出、结构化输出、JSON 模式、推理模式、提示缓存、系统提示、种子、logprobs、嵌入、流式 |
-| **自动探测配置** | CC Switch、Codex、Claude Code、opencode、Gemini CLI、Continue、Aider、环境变量、本机模型服务（9 个来源），合并去重后一键导入 |
+| **自动探测配置** | CC Switch、Codex、Claude Code、OpenCode、Gemini CLI、Continue、Aider、环境变量、本机模型服务（23 个来源），合并去重后一键导入 |
 | **中英双语** | GUI 全量双语，设置里随时切换、无需重启；默认跟随系统语言（中文系统→中文，英文系统→英文，其它语言→英文） |
 | **GUI + CLI** | 同一套引擎。GUI 用 SwiftUI（原生控件、原生菜单、原生设置窗口），CLI 供终端与你自己的 Agent 调用 |
 | **完全本地** | 不发送遥测、不上传配置、不做任何「云端校验」；状态文件权限 `0600`；输出经过统一脱敏 |
-| **多厂商** | 25 种厂商预设 + 5 种协议适配器，任何 OpenAI 兼容端点都能手填 |
+| **多厂商** | 28 种厂商预设 + 5 种协议适配器，任何 OpenAI 兼容端点都能手填 |
 | **测试省 token** | 三档计划，最低一档 **0 completion token**；能力结论带缓存，重复测试不重复花钱 |
 
 ---
@@ -86,9 +90,20 @@ LLMProbe 就是给这些问题准备的：它读取你本机已有的 Agent 配�
 
 ### 方式一：下载现成的 App（推荐）
 
-1. 到 [Releases](https://github.com/Lucas-Qh-Lai/llm-probe/releases) 下载 `LLMProbe-<版本>.zip`；
+Release 同时提供两个 macOS 原生版本，请按电脑处理器选择：
+
+| 电脑类型 | 应下载的文件 | 说明 |
+| --- | --- | --- |
+| **Apple 芯片（ARM64）** | `LLMProbe-<版本>-macOS-ARM64.zip` | 适用于 M1 / M2 / M3 / M4 及更新的 Apple 芯片 Mac |
+| **Intel（x86_64）** | `LLMProbe-<版本>-macOS-Intel-x86_64.zip` | 适用于搭载 Intel Core 处理器的 Mac |
+
+不确定型号时，打开 **苹果菜单 → 关于本机**：显示 M 系列芯片就是 Apple 芯片版；显示 Intel Core 就下载 Intel 版。两个包都是对应架构的原生二进制，不需要靠 Rosetta 翻译。
+
+1. 到 [Releases](https://github.com/Lucas-Qh-Lai/llm-probe/releases) 下载对应架构的 zip；
 2. 解压后把 `LLMProbe.app` 拖进「应用程序」；
 3. 首次打开如果被 Gatekeeper 拦下（应用是 ad-hoc 签名，没有 Apple 开发者签名），右键点图标 → **打开** → 再点「打开」即可。
+
+Release 同时附每个 zip 的 `.sha256` 与汇总的 `LLMProbe-<版本>-SHA256SUMS`，下载后可自行校验。
 
 ### 方式二：从源码构建
 
@@ -99,7 +114,8 @@ xcode-select --install            # 如果还没装命令行工具
 git clone https://github.com/Lucas-Qh-Lai/llm-probe.git
 cd llm-probe
 
-./scripts/build_app.sh release    # 构建并安装到 ~/Applications/LLMProbe.app
+./scripts/build_app.sh release    # 构建当前架构并安装到 ~/Applications/LLMProbe.app
+./scripts/build_app.sh release ~/Applications x86_64   # 需要时交叉构建 Intel（x86_64）版
 ./scripts/install_cli.sh          # 安装 CLI 到 /usr/local/bin（无权限时自动用 ~/.local/bin）
 ```
 
@@ -296,9 +312,9 @@ fi
 
 协议可以自动推断（按 URL 域名、配置里的字段形态、模型 ID 习惯），也可以 `--wire` 手动指定。
 
-### 厂商预设（25 种）
+### 厂商预设（28 种）
 
-OpenAI · Anthropic · Google Gemini · Azure OpenAI · OpenRouter · DeepSeek · Moonshot / Kimi · 智谱 GLM · 阿里云 DashScope · SiliconFlow · Groq · Mistral · xAI · Together AI · Fireworks AI · Perplexity · Cerebras · Ollama · LM Studio · MLX server · vLLM · LiteLLM · One API / New API · Command Code · 自定义
+OpenAI · Anthropic · Google Gemini · Azure OpenAI · OpenRouter · DeepSeek · Moonshot / Kimi · 智谱 GLM · 阿里云 DashScope · MiniMax · Xiaomi MiMo · iFlow · SiliconFlow · Groq · Mistral · xAI · Together AI · Fireworks AI · Perplexity · Cerebras · Ollama · LM Studio · MLX server · vLLM · LiteLLM · One API / New API · Command Code · 自定义
 
 预设只负责填写默认 Base URL 与常见环境变量名（例如 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`GEMINI_API_KEY`）。**任何** OpenAI 兼容端点都可以用「自定义」直接填。
 
@@ -342,24 +358,43 @@ OpenAI · Anthropic · Google Gemini · Azure OpenAI · OpenRouter · DeepSeek �
 
 ## 自动探测：能读哪些本地配置
 
-| 来源 | 路径 | 读什么 |
+所有 reader 都是**只读**的：不修改、不迁移、不修复其它工具的配置。
+
+| Agent 工具 | 主要路径 | 识别内容 |
 | --- | --- | --- |
-| **CC Switch** | `~/.cc-switch/cc-switch.db` | **SQLite 只读打开**，逐个读取 provider 槽位：`codex` / `claude` / `claude-desktop` / `gemini` / `opencode` / `hermes` 六种 `app_type`，解析各自的 base URL、模型、协议与密钥来源，并标记「当前使用」的那一个 |
-| OpenAI Codex | `~/.codex/config.toml`（尊重 `CODEX_HOME`） | 自定义 provider、base_url、wire API、模型、`env_key` |
-| Claude Code | `~/.claude/settings.json` | `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` 等 env 覆盖 |
-| opencode | `~/.config/opencode/opencode.json` | provider 定义、`options.baseURL`、模型表 |
-| Gemini CLI | `~/.gemini/settings.json` | 自定义端点与模型 |
-| Continue | `~/.continue/config.json` | provider 与 apiBase |
-| Aider | `~/.aider.conf.yml` | OpenAI 兼容 base URL 与模型 |
-| 环境变量 | 当前进程环境 | 常见厂商的 `*_API_KEY` / `*_BASE_URL` |
-| 本机服务 | `127.0.0.1` | 常见端口扫描（11434 / 1234 / 8080 / 8000 / 4000 / 3000 / 3050 等），发现本地模型服务 |
+| CC Switch | `~/.cc-switch/cc-switch.db` | SQLite 只读读取各 `app_type` 的 provider、协议、模型与当前项 |
+| Codex CLI | `~/.codex/config.toml`（尊重 `CODEX_HOME`） | 自定义 provider、`base_url`、wire API、模型、`env_key` |
+| Claude Code | `~/.claude/settings.json` | `ANTHROPIC_BASE_URL`、认证来源与模型 |
+| OpenCode | `~/.config/opencode/opencode.json` | provider、`options.baseURL`、模型表与本机 auth 来源 |
+| Gemini CLI | `~/.gemini/settings.json` | 自定义端点、模型与 `.env` |
+| GitHub Copilot CLI | `~/.copilot/config.json` + `COPILOT_PROVIDER_*` | BYOK base URL、协议、模型与凭据来源 |
+| Cursor CLI | `~/.cursor` | 只标记安装状态；官方托管路由没有稳定的公开本地 base URL |
+| Amazon Q Developer CLI | `~/.aws/amazonq` | 只标记安装状态；Amazon Bedrock 托管路由不生成猜测端点 |
+| Qwen Code | `~/.qwen/settings.json` | `modelProviders`、`baseUrl`、`envKey`、模型 |
+| DeepSeek Harness | `$DSH_HOME/profiles/*/cordis.patch.yml` | provider route、协议、模型、`apiKeyEnv` |
+| Kimi Code CLI | `~/.kimi/config.toml` | `providers`、`models`、`base_url`、`api_key` 来源 |
+| MiniMax Code | 常见 `~/.config/minimax-code` 等配置路径 | provider、API 协议、模型（自动路径未完全验证） |
+| ZCode | 常见 `~/.zcode` / Application Support 配置路径 | provider、OpenAI / Anthropic base URL、模型（自动路径未完全验证） |
+| MiMo Code | `~/.config/mimocode/mimocode.jsonc` | `provider`、`baseURL`、`apiKey`、模型映射 |
+| iFlow CLI | `~/.iflow/settings.json` | `baseUrl`、`modelName`、`apiKey` 来源 |
+| Trae Agent | 常见 `trae_config.yaml` 路径 | `model_providers`、`models`、`base_url`（自动路径未完全验证） |
+| Pi | `~/.pi/agent/models.json` | `providers`、`baseUrl`、`api`、`models` |
+| OpenClaw | `~/.openclaw/openclaw.json` 与 agent `models.json` | `models.providers`、协议、模型能力与上下文元数据 |
+| Hermes Agent | `~/.hermes/config.yaml` | `model`、`providers` / `custom_providers`、`base_url`、`api_mode` |
+| Continue | `~/.continue/config.json` | provider 与 `apiBase` |
+| aider | `~/.aider.conf.yml` | OpenAI 兼容 base URL 与模型 |
+| 环境变量 | 当前进程环境 | 常见 `*_API_KEY` / `*_BASE_URL` / `*_MODEL` |
+| 本机服务 | `127.0.0.1` | 常见本地模型服务端口扫描 |
+
+> **自动识别说明：部分 Agent 工具自动识别配置功能未经过验证，仅供参考。**
+> 尤其是 `MiniMax Code`、`ZCode`、`Trae Agent` 的本地路径或版本化格式可能变化；其它适配器也按公开文档与样例实现，仍建议导入前检查解析出的端点。无法可靠解析的托管路由会明确标为“跳过”，不会猜测 base URL。
 
 ### 关于 CC Switch
 
 CC Switch 是本工具**第一位**读取的来源：它通常是本机「当前正在用哪个上游」的唯一真相。实现上有几条刻意的约束：
 
 - 数据库**始终以 `?mode=ro` 只读方式打开**，只执行 `SELECT`；LLMProbe 不会写入、迁移或改动 CC Switch 的任何数据；
-- 解析 `settings_config` 里的 JSON，按 `app_type` 走不同的字段形态（codex 的整份 `config.toml`、claude 的 `env`、opencode 的 `options.baseURL`、hermes 的扁平结构）；
+- 解析 `settings_config` 里的 JSON，按 `app_type` 走不同的字段形态（codex 的整份 `config.toml`、claude 的 `env`、OpenCode 的 `options.baseURL`、hermes 的扁平结构）；
 - `is_current` 的行会打上 `active` 标签，导入后在列表里能一眼看出「现在生效的是哪个」；
 - 密钥**只记录来源**（环境变量名 / 配置里的值），展示与导出时统一经 `Redactor` 处理，只显示「已配置」，不显示明文。
 
@@ -369,17 +404,20 @@ CC Switch 是本工具**第一位**读取的来源：它通常是本机「当前
 
 ## 隐私与安全
 
-- **纯本地**：没有任何遥测、埋点、崩溃上报、版本检查。唯一的网络请求就是你要求探测的那些上游端点；
-- **只读别人家的配置**：所有 reader 只读取，不改写；CC Switch 的 SQLite 只读打开；
-- **脱敏出口**：所有对外文本（终端、导出报告、JSON）都过一遍 `Redactor`，密钥只显示前 4 位或不显示；
-- **状态文件 `0600`**：`~/Library/Application Support/LLMProbe/state.json` 只对当前用户可读；
-- **不写入别人的目录**：LLMProbe 不会往 `~/.codex`、`~/.claude`、`~/.cc-switch` 里写任何文件；
-- **仓库自检**：仓库自带 `scripts/check_privacy.sh`，提交前扫描密钥形态、本机路径与截图元数据，`.githooks/pre-commit` 已接好。
+> **一句话承诺：除主动探针发往你选择的 LLM 上游外，LLMProbe 完全本地运行，不会上传任何配置。**
 
-想自己确认「没有偷偷联网」也很简单：
+- **配置不上传**：Agent 配置、端点、模型名、密钥来源和报告只在本机内存/状态文件中处理；
+- **无遥测**：没有埋点、统计、崩溃上报、更新检查或其它“电话回家”请求；
+- **只读第三方配置**：所有 reader 只读取，不改写；CC Switch 的 SQLite 始终以 `?mode=ro` 打开；
+- **脱敏出口**：终端、导出报告和 JSON 都经过 `Redactor`；密钥只显示掩码或“已配置”；
+- **状态文件 `0600`**：`~/Library/Application Support/LLMProbe/state.json` 仅当前用户可读；
+- **开源可审查**：MIT 许可证，源码、构建脚本、隐私扫描器和截图流水线全部公开，可独立审计与复现；
+- **唯一例外**：点击“运行探针”后，测试提示词和必要请求体会发往你明确选择的上游；配置本身不会被上传到 LLMProbe 或任何第三方服务。
+
+想自己核对运行时网络连接：
 
 ```bash
-sudo lsof -i -n -P | grep LLMProbe     # 运行期间看它连了谁
+sudo lsof -i -n -P | grep LLMProbe
 ```
 
 ---
@@ -401,13 +439,42 @@ sudo lsof -i -n -P | grep LLMProbe     # 运行期间看它连了谁
 ```bash
 swift build                              # 构建全部 target
 swift build --product llmprobe           # 只构建 CLI（快）
-swift run llmprobe selftest              # 离线自检，必须 32/32 全绿
+swift run llmprobe selftest              # 离线自检，必须 40/40 全绿
 swift test                               # 需要完整 Xcode；只有命令行工具时用 selftest 代替
 ./scripts/build_app.sh release           # 打包并安装到 ~/Applications/LLMProbe.app
 ./scripts/install_cli.sh                 # 安装 CLI
 ./scripts/check_privacy.sh               # 提交前隐私扫描
 ./scripts/capture_screenshots.sh         # 用虚构数据重新生成文档截图（需要解锁的屏幕）
 ```
+
+### 参与开发与更新
+
+欢迎提交 bug 修复、Agent 配置适配器、UI / 文案改进、测试、文档和平台实测结果。无需先问“能不能做”；先用 Issue 说明问题或提案，涉及大范围重构、兼容性破坏或 Release 流程时再一起确认方向。
+
+#### 推荐参与流程
+
+1. **找一个明确任务**：从现有 Issue 认领，或新开 Issue 描述问题、复现步骤、期望行为；安全问题请使用 GitHub Private Vulnerability Reporting，不要发公开 Issue。
+2. **Fork 并建分支**：`fix/...`、`feature/...`、`discovery/...`、`docs/...` 均可；不要直接推送受保护分支。
+3. **在本机构建验证**：至少运行 `swift build` 与 `swift run llmprobe selftest`。当前基线是 **40/40 全绿**，新增纯函数逻辑必须同步添加 `SelfTest.Check`。
+4. **提交前跑隐私门禁**：`./scripts/check_privacy.sh` 必须 clean；不得提交真实 base URL、模型名、密钥、Cookie、`state.json`、`.app` 包或本机绝对路径。
+5. **提交 Pull Request**：说明改了什么、为什么、如何验证、影响哪些平台；UI 改动附改前/改后截图，发现器改动附虚构 fixture 的解析结果。PR 会检查构建、自检、隐私、文案与行为回归。
+6. **合并与 Release**：维护者审核合并后更新版本、文档和 Release Notes；Release 采用累积发布，不删除旧 tag 或旧 Release。
+
+#### 特别欢迎的贡献
+
+- 新增 Agent harness 配置 reader（请优先复用 `ConfigReader` / `AgentConfigExtractor` 形态，严格只读）；
+- 为 Windows / Linux 提供真实硬件测试结果，而不是只报告编译通过；
+- 修正产品名称大小写、术语、双语措辞和 README 示例；
+- 用 SwiftUI / AppKit 官方组件改进布局、可访问性、键盘操作和 Reduce Motion；
+- 新增离线 parser fixture、协议适配器测试与隐私回归测试。
+
+#### 新增 Agent 适配器的约定
+
+- 先查官方文档，记录配置路径、字段名、官方产品名和大小写；
+- 不执行被发现工具的命令，不写入其配置目录，不读取或输出明文密钥；
+- 解析不出端点时明确返回 `notFound` / `unsupported`，不要猜测 base URL；
+- 对未在真机验证的路径或 schema，在 UI 与 README 中标注“未经过验证，仅供参考”；
+- 新增解析纯函数要补 `SelfTest`，并使用 `Acme` / `demo-*` 虚构数据制作截图。
 
 ### 目录结构
 
@@ -418,7 +485,7 @@ Sources/
     Net/                 HTTP 客户端、SSE 解码、错误分类
     Providers/           5 个协议适配器 + 厂商注册表 + 端点推断
     Probes/              11 个探针与提示词
-    Discovery/           9 个本地配置读取器（含 CC Switch 的 SQLite 只读读取）
+    Discovery/           23 个发现来源（含 CC Switch 的 SQLite 只读读取）
     Support/             脱敏、token 估算、缓存、状态存储、双语、自检
   llmprobe/              CLI（discover / probe / import / list-sources / selftest）
   LLMProbeApp/           SwiftUI 应用（侧边栏、详情、编辑器、探测面板、设置）
@@ -429,7 +496,7 @@ docs/images/             截图与应用图标
 
 ### 离线自检覆盖了什么
 
-`llmprobe selftest` 不联网、不读凭据，32 项检查覆盖：脱敏规则、token 估算、TOML 解析、SSE 分帧、端点去重与本机识别、协议推断、错误分类（含「从报错里提取上下文上限」）、计划预算、能力缓存优先级、状态文件往返、能力模态完整性、双语文案切换与枚举全覆盖、启动参数解析、传输错误的双语映射、系统语言映射（中文→中文 / 英文→英文 / 其它→英文）、CLI 只输出英文。
+`llmprobe selftest` 不联网、不读凭据，40 项检查覆盖：脱敏规则、token 估算、JSONC / TOML / YAML 子集解析（含无缩进序列）、多 Agent provider / model 提取、产品名大小写、SSE 分帧、端点去重与本机识别、协议推断、错误分类（含「从报错里提取上下文上限」）、计划预算、能力缓存优先级、状态文件往返、能力模态完整性、双语文案切换与枚举全覆盖、启动参数解析、传输错误的双语映射、系统语言映射和 CLI 只输出英文。
 
 ---
 

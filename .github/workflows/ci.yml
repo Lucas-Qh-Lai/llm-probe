@@ -29,6 +29,14 @@ jobs:
       - name: Offline self test (must stay 100% green)
         run: swift run llmprobe selftest
 
+      - name: Cross-build Intel (x86_64) binaries
+        run: |
+          swift build -c release --product llmprobe --arch x86_64
+          swift build -c release --product LLMProbeApp --arch x86_64
+          BIN_PATH="$(swift build -c release --arch x86_64 --show-bin-path)"
+          lipo -archs "$BIN_PATH/llmprobe" | grep -qx x86_64
+          lipo -archs "$BIN_PATH/LLMProbeApp" | grep -qx x86_64
+
       - name: Unit tests
         run: swift test
 

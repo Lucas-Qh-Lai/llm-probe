@@ -58,7 +58,7 @@ Sources/LLMProbeCore/
   Net/          HTTPClient (buffered + streaming), SSEDecoder, ErrorClassifier
   Providers/    one adapter per wire protocol + ProviderRegistry
   Probes/       ProbeEngine (11 probes) + prompt/parameter tables
-  Discovery/    readers for CC Switch, Codex, Claude Code, opencode, Gemini CLI,
+  Discovery/    readers for CC Switch, Codex CLI, Claude Code, OpenCode, Gemini CLI,
                 Continue, Aider, env vars, local servers
   Support/      Redactor, TokenEstimator, MiniTOML, EndpointStoreFile, SelfTest
 Sources/LLMProbeApp/   SwiftUI: sidebar, endpoint detail, editor, discovery sheet
@@ -138,7 +138,7 @@ Reuse an existing wire protocol first — most vendors are OpenAI-compatible:
 ## 8. 中文速览
 
 * 本项目是**纯本地**的 LLM 上游体检工具，一个引擎 + CLI + macOS SwiftUI App。
-* 本机只有 Command Line Tools，`swift test` 用不了，靠 `swift run llmprobe selftest`（26 项，必须全绿）；新增纯函数逻辑要同步加自检项。
+* 本机只有 Command Line Tools，`swift test` 用不了，靠 `swift run llmprobe selftest`（40 项，必须全绿）；新增纯函数逻辑要同步加自检项。
 * 提交前必须跑 `./scripts/check_privacy.sh`；绝对不要把本机真实端点、模型名、密钥、`state.json`、`.app` 包提交上去。
 * 截图只能来自 `scripts/demo_server.py` 的虚构数据，提交前要剥掉元数据。
 * 不新增任何联网上报；认证信息一律走 `Redactor`。

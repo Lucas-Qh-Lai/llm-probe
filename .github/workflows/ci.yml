@@ -16,7 +16,7 @@ concurrency:
 jobs:
   macos:
     name: macOS · build, self test, unit tests
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +44,12 @@ jobs:
         run: |
           ./.build/debug/llmprobe version
           ./.build/debug/llmprobe list-sources
-          ./.build/debug/llmprobe probe --help >/dev/null 2>&1 || ./.build/debug/llmprobe help >/dev/null
+          # `--help` must print usage and exit 0, never run the command.
+          ./.build/debug/llmprobe probe --help | grep -q "USAGE"
+          ./.build/debug/llmprobe import --help | grep -q "USAGE"
+          if ./.build/debug/llmprobe import --no-locl 2>/dev/null; then
+            echo "unknown option was accepted" >&2; exit 1
+          fi
 
   linux:
     name: Linux · CLI (best effort, untested by the maintainer)

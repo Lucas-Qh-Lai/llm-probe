@@ -68,7 +68,11 @@ public final class HTTPClient: @unchecked Sendable {
         config.httpCookieAcceptPolicy = .never
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        // `waitsForConnectivity` is a macOS/iOS property; on Linux (corelibs
+        // Foundation) it is read-only, so the portable build skips it.
+        #if canImport(Darwin)
         config.waitsForConnectivity = false
+        #endif
         config.timeoutIntervalForResource = 600
         session = URLSession(configuration: config)
         let streamingConfig = config.copy() as? URLSessionConfiguration ?? config

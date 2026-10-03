@@ -1,0 +1,32 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# App bundles and release artefacts. They are produced by scripts/build_app.sh,
+# which writes outside the checkout on purpose (a cloud-synced folder breaks the
+# ad-hoc signature).
+build/
+dist/
+*.app
+
+# Local state. Never commit this: it can contain discovered endpoints and inline
+# credentials copied out of other agents' configuration files.
+state.json
+*.state.json
+exports/
+reports/
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+._*
+.AppleDouble
+
+# Editors
+.idea/
+.vscode/
+*.xcuserstate
+xcuserdata/

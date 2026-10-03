@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS · build, self test, unit tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Build everything
+        run: swift build
+
+      - name: Offline self test (must stay 100% green)
+        run: swift run llmprobe selftest
+
+      - name: Unit tests
+        run: swift test
+
+      - name: CLI smoke test (no credentials, no network)
+        run: |
+          ./.build/debug/llmprobe version
+          ./.build/debug/llmprobe list-sources
+          ./.build/debug/llmprobe probe --help >/dev/null 2>&1 || ./.build/debug/llmprobe help >/dev/null
+
+  linux:
+    name: Linux · CLI (best effort, untested by the maintainer)
+    runs-on: ubuntu-latest
+    # The GUI is SwiftUI/AppKit and macOS-only, and the maintainer has no Linux
+    # machine: this job proves the portable half still compiles, and it is
+    # deliberately informational instead of a merge gate. See README → "Cross
+    # platform status".
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Build the portable targets only
+        run: swift build --product llmprobe
+
+      - name: Offline self test
+        run: ./.build/debug/llmprobe selftest
+
+  privacy:
+    name: Privacy gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan the tree for credentials, machine paths and capture metadata
+        run: ./scripts/check_privacy.sh

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Blocks a commit that would publish a credential or this machine's paths.
+#
+# Enable once per clone:
+#     git config core.hooksPath .githooks
+exec "$(git rev-parse --show-toplevel)/scripts/check_privacy.sh" --staged

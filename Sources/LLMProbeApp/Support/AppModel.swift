@@ -5,6 +5,9 @@ import LLMProbeCore
 /// The app's single source of truth.
 @MainActor
 final class AppModel: ObservableObject {
+    /// Shared by the SwiftUI scenes and the AppDelegate fallback window.
+    static let shared = AppModel()
+
     @Published private(set) var state: AppState
     @Published var selection: UUID?
     @Published var reports: [UUID: EndpointReport] = [:]
@@ -205,10 +208,11 @@ final class AppModel: ObservableObject {
         let cache = state.cache
 
         runTask = Task { [weak self] in
+            guard let model = self else { return }
             let report = await engine.run(endpoint: endpoint, plan: plan, cache: cache) { update in
-                Task { @MainActor [weak self] in
-                    guard let self, self.runningID == endpoint.id else { return }
-                    self.progress = update
+                Task { @MainActor in
+                    guard model.runningID == endpoint.id else { return }
+                    model.progress = update
                 }
             }
             await MainActor.run { [weak self] in
@@ -228,11 +232,12 @@ final class AppModel: ObservableObject {
         guard runningID == nil else { return }
         let targets = state.endpoints
         Task { [weak self] in
+            guard let model = self else { return }
             for endpoint in targets {
-                guard let self, self.runningID == nil else { break }
-                self.run(endpoint)
+                guard model.runningID == nil else { break }
+                model.run(endpoint)
                 // Wait for the current run to finish before starting the next.
-                while await self.runningID != nil {
+                while model.runningID != nil {
                     try? await Task.sleep(nanoseconds: 200_000_000)
                 }
             }

@@ -61,7 +61,7 @@ struct SettingsView: View {
         Form {
             Section {
                 LabeledContent(L10n.t("状态文件", "State file")) {
-                    Text(PathTools.abbreviate(model.stateFileURL.path))
+                    Text(displayStatePath)
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
@@ -89,6 +89,15 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var displayStatePath: String {
+        // The screenshot pipeline uses an isolated temporary state directory;
+        // show the canonical public path instead of leaking a machine temp path.
+        if LaunchOptions.shared.demoDiscovery {
+            return "~/Library/Application Support/LLMProbe/state.json"
+        }
+        return PathTools.abbreviate(model.stateFileURL.path)
     }
 
     private var about: some View {

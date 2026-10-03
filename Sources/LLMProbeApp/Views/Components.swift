@@ -37,11 +37,11 @@ struct SectionCard<Content: View>: View {
             }
             content
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(.separator.opacity(0.6), lineWidth: 0.5)
         )
     }
@@ -68,23 +68,26 @@ struct StatCard: View {
             }
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
                 if let unit {
                     Text(unit)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
             if let caption {
                 Text(caption)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -145,7 +148,29 @@ struct ProbeRow: View {
     @State private var expanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        DisclosureGroup(isExpanded: $expanded) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(outcome.details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                    LabeledContent(key) {
+                        Text(value)
+                            .font(.system(size: 10, design: .monospaced))
+                            .textSelection(.enabled)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    .font(.system(size: 10, design: .monospaced))
+                }
+                if let body = outcome.failure?.rawBodySnippet {
+                    Text(Redactor.scrub(body))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                }
+            }
+            .padding(.top, 4)
+        } label: {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: outcome.status.symbolName)
                     .foregroundStyle(outcome.status.color)
@@ -184,44 +209,10 @@ struct ProbeRow: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                if !outcome.details.isEmpty || outcome.failure?.rawBodySnippet != nil {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) { expanded.toggle() }
-                    } label: {
-                        Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.tertiary)
-                }
-            }
-            if expanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(outcome.details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text(key)
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(.tertiary)
-                            Text(value)
-                                .font(.system(size: 10, design: .monospaced))
-                                .textSelection(.enabled)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    if let body = outcome.failure?.rawBodySnippet {
-                        Text(Redactor.scrub(body))
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 7))
-                    }
-                }
-                .padding(.leading, 26)
             }
         }
-        .padding(.vertical, 7)
+        .disclosureGroupStyle(.automatic)
+        .padding(.vertical, 5)
         .padding(.horizontal, 10)
         .background(.background.secondary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }

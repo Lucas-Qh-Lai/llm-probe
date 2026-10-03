@@ -42,6 +42,15 @@ struct DiscoverySheet: View {
             Text(L10n.t("只读取本机文件，全部解析在本机完成，不会上传任何内容。", "Reads local files only. Everything is parsed on this Mac, nothing is uploaded."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Label(
+                L10n.t(
+                    "部分 Agent 工具自动识别配置功能未经过验证，仅供参考。",
+                    "Auto-configuration detection for some agent tools is unverified and provided for reference only."
+                ),
+                systemImage: "info.circle"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .padding(16)
     }

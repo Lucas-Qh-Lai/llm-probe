@@ -25,7 +25,14 @@ enum Fmt {
     }
 
     static func relative(_ date: Date) -> String {
+        let elapsed = max(0, Date().timeIntervalSince(date))
+        if elapsed < 5 { return L10n.t("刚刚", "just now") }
+        if elapsed < 60 {
+            let seconds = Int(elapsed.rounded())
+            return L10n.t("\(seconds) 秒前", "\(seconds)s ago")
+        }
         let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: LanguageSettings.shared.resolved.localeIdentifier)
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }

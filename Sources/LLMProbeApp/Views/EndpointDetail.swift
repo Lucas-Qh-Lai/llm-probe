@@ -61,13 +61,21 @@ struct EndpointDetail: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                DetailLine(label: L10n.t("模型", "Model"), value: endpoint.model, icon: "cube")
-                DetailLine(label: L10n.t("端点", "Endpoint"), value: endpoint.baseURL, icon: "link")
-                if let origin = endpoint.origin {
-                    DetailLine(label: L10n.t("来源", "Source"), value: origin.shortDescription, icon: "doc.text.magnifyingglass")
+            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 5) {
+                GridRow {
+                    DetailLine(label: L10n.t("模型", "Model"), value: endpoint.model, icon: "cube")
                 }
-                DetailLine(label: L10n.t("鉴权", "Auth"), value: endpoint.auth.label, icon: "key")
+                GridRow {
+                    DetailLine(label: L10n.t("端点", "Endpoint"), value: endpoint.baseURL, icon: "link")
+                }
+                if let origin = endpoint.origin {
+                    GridRow {
+                        DetailLine(label: L10n.t("来源", "Source"), value: origin.shortDescription, icon: "doc.text.magnifyingglass")
+                    }
+                }
+                GridRow {
+                    DetailLine(label: L10n.t("鉴权", "Auth"), value: endpoint.auth.label, icon: "key")
+                }
             }
         }
         .padding(16)
@@ -254,7 +262,7 @@ struct EndpointDetail: View {
     // MARK: - History
 
     private var historySection: some View {
-        let samples = model.history
+        let samples = Array(model.history.suffix(40))
         return SectionCard(
             title: L10n.t("速度趋势", "Speed trend"),
             systemImage: "chart.xyaxis.line",
@@ -350,7 +358,20 @@ struct EndpointDetail: View {
         panel.nameFieldStringValue = "llmprobe-\(endpoint.model.replacingOccurrences(of: "/", with: "-")).md"
         panel.allowedContentTypes = [.plainText]
         if panel.runModal() == .OK, let url = panel.url {
-            try? model.exportReport(report).write(to: url, atomically: true, encoding: .utf8)
+            do {
+                try model.exportReport(report).write(to: url, atomically: true, encoding: .utf8)
+                model.banner = AppModel.Banner(
+                    kind: .info,
+                    title: L10n.t("已保存", "Saved"),
+                    message: L10n.t("报告已写入所选位置。", "The report was written to the selected location.")
+                )
+            } catch {
+                model.banner = AppModel.Banner(
+                    kind: .error,
+                    title: L10n.t("保存失败", "Save failed"),
+                    message: Redactor.scrub(error.localizedDescription)
+                )
+            }
         }
     }
 }
@@ -386,20 +407,17 @@ struct DetailLine: View {
     let icon: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-                .frame(width: 14)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(width: 42, alignment: .leading)
+        LabeledContent {
             Text(value)
                 .font(.system(size: 11, design: .monospaced))
                 .textSelection(.enabled)
                 .lineLimit(2)
                 .truncationMode(.middle)
+        } label: {
+            Label(label, systemImage: icon)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 86, alignment: .leading)
         }
     }
 }

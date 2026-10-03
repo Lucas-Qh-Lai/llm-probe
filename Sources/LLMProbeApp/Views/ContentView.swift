@@ -54,37 +54,71 @@ struct EmptyStateView: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "waveform.path.ecg.rectangle")
-                .font(.system(size: 54, weight: .light))
-                .foregroundStyle(.tint)
-            Text(L10n.t("还没有端点", "No endpoints yet"))
-                .font(.title2.weight(.semibold))
-            Text(L10n.t("从本机已安装的 Agent 配置中自动探测，或手动添加一个上游。", "Discover one from an agent installed on this Mac, or add an upstream by hand."))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 380)
-            HStack(spacing: 12) {
-                Button {
-                    model.showDiscovery = true
-                    Task { await model.discover() }
-                } label: {
-                    Label(L10n.t("自动探测配置", "Auto-discover config"), systemImage: "sparkle.magnifyingglass")
+        // A linear layout instead of `ContentUnavailableView` + a bottom
+        // overlay: the previous version pinned the support note on top of the
+        // action buttons whenever the window was shorter than the ideal size,
+        // so the two drew over each other. Everything below is in one stack,
+        // which cannot overlap no matter how tall the window is.
+        VStack(spacing: 0) {
+            Spacer(minLength: 24)
+
+            VStack(spacing: 14) {
+                Image(systemName: "waveform.path.ecg.rectangle")
+                    .font(.system(size: 46, weight: .regular))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+
+                VStack(spacing: 6) {
+                    Text(L10n.t("还没有端点", "No endpoints yet"))
+                        .font(.title3.weight(.semibold))
+                    Text(L10n.t(
+                        "从本机已安装的 Agent 配置中自动探测，或手动添加一个上游。",
+                        "Discover one from an agent installed on this Mac, or add an upstream by hand."
+                    ))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 420)
                 }
-                .buttonStyle(.borderedProminent)
-                Button {
-                    model.beginAdd()
-                } label: {
-                    Label(L10n.t("手动添加", "Add manually"), systemImage: "plus")
+
+                HStack(spacing: 12) {
+                    Button {
+                        model.showDiscovery = true
+                        Task { await model.discover() }
+                    } label: {
+                        Label(L10n.t("自动探测配置", "Auto-discover config"), systemImage: "sparkle.magnifyingglass")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
+
+                    Button {
+                        model.beginAdd()
+                    } label: {
+                        Label(L10n.t("手动添加", "Add manually"), systemImage: "plus")
+                    }
                 }
+                .controlSize(.large)
+                .padding(.top, 6)
             }
-            Text(L10n.t("支持 CC Switch、Codex、Claude Code、opencode、Gemini CLI、Continue、Aider 与本地模型服务", "Reads CC Switch, Codex, Claude Code, opencode, Gemini CLI, Continue, Aider and local model servers"))
-                .font(.footnote)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: 460)
-                .multilineTextAlignment(.center)
+
+            Spacer(minLength: 28)
+
+            Text(L10n.t(
+                "支持 Codex CLI、Claude Code、OpenCode、Qwen Code、DeepSeek Harness、Pi、OpenClaw、Hermes Agent 等本地配置",
+                "Reads local configuration from Codex CLI, Claude Code, OpenCode, Qwen Code, DeepSeek Harness, Pi, OpenClaw, Hermes Agent and more"
+            ))
+            .font(.footnote)
+            .foregroundStyle(.tertiary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 560)
         }
-        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 32)
+        .padding(.top, 28)
+        .padding(.bottom, 22)
     }
 }
 

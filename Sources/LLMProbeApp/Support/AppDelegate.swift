@@ -1,7 +1,8 @@
 import AppKit
+import SwiftUI
 import LLMProbeCore
 
-/// Gives the window a deterministic size and brings it to the front.
+/// Guarantees a main window and gives it a deterministic size.
 ///
 /// SwiftUI's `defaultSize` is only a hint. Two situations produce a degenerate
 /// window instead:
@@ -16,15 +17,31 @@ import LLMProbeCore
 /// The pin therefore runs on several delayed passes. It only ever acts when the
 /// window is smaller than `minSize`, which the user cannot do either, so it
 /// never fights a deliberate resize.
+///
+/// Delayed passes alone are still not enough: a window that the framework
+/// resizes *after* the last pass is never examined again, and the app has no use
+/// for a window below `minSize`. `installMinimumSizeGuard` therefore keeps
+/// checking every resize for the whole session, which also covers a window that
+/// SwiftUI shrinks to the fitting size of fresh content while the state load
+/// finishes.
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let preferredSize = NSSize(width: 1340, height: 880)
     private let minimumSize = NSSize(width: 1080, height: 680)
     private let pinDelays: [Double] = [0.35, 0.9, 1.6, 2.6, 4.0, 6.0, 8.0]
+    private weak var fallbackWindow: NSWindow?
+    private var resizeGuard: NSObjectProtocol?
+    /// Set while a repair is in flight so the repair's own resize notification
+    /// cannot re-enter and start a shrink/repair loop with SwiftUI.
+    private var isRepairingSize = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         startWindowTraceIfRequested()
+        observeMainWindowCreation()
+        installMinimumSizeGuard()
         schedulePin(pass: 0)
+        scheduleFallbackWindow()
     }
 
     /// `LLM_PROBE_WINDOW_DEBUG=1` traces every resize and window creation.
@@ -40,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let logPath, !FileManager.default.fileExists(atPath: logPath) {
             FileManager.default.createFile(atPath: logPath, contents: nil)
         }
-        func trace(_ text: String) {
+        nonisolated func trace(_ text: String) {
             let stamp = String(format: "%.3f", Date().timeIntervalSince(started))
             let line = "WINTRACE +\(stamp)s \(text)\n"
             FileHandle.standardError.write(Data(line.utf8))
@@ -76,6 +93,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
+    /// Repairs a main window that has been shrunk below the declared minimum.
+    ///
+    /// `minSize` already stops a *user* from resizing this small, so any window
+    /// under the minimum was resized by the framework, not by a person. The
+    /// check runs for the lifetime of the process because the shrink is driven
+    /// by content changes that can happen at any time.
+    private func installMinimumSizeGuard() {
+        resizeGuard = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            MainActor.assumeIsolated {
+                guard let window = note.object as? NSWindow else { return }
+                self?.repairIfTooSmall(window)
+            }
+        }
+    }
+
+    private func repairIfTooSmall(_ window: NSWindow) {
+        guard !isRepairingSize,
+              window.canBecomeMain,
+              !window.isSheet,
+              !isSettingsWindow(window),
+              window !== fallbackWindow else { return }
+        window.minSize = minimumSize
+        let size = window.frame.size
+        guard size.width < minimumSize.width || size.height < minimumSize.height else { return }
+        isRepairingSize = true
+        window.setContentSize(preferredSize)
+        isRepairingSize = false
+        if ProcessInfo.processInfo.environment["LLM_PROBE_WINDOW_DEBUG"] != nil {
+            let line = "WINDOWDEBUG repaired window \(size) -> \(window.frame.size)\n"
+            FileHandle.standardError.write(Data(line.utf8))
+        }
+    }
+
     private func schedulePin(pass: Int) {
         guard pass < pinDelays.count else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + pinDelays[pass]) { [weak self] in
@@ -92,10 +146,83 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let windows = sender.windows.filter { $0.canBecomeMain }
             if let window = windows.first {
                 window.makeKeyAndOrderFront(nil)
+            } else {
+                createFallbackWindowIfNeeded()
             }
             sender.activate(ignoringOtherApps: true)
         }
         return true
+    }
+
+    /// SwiftUI normally creates the `WindowGroup` window during launch. On real
+    /// Macs that path can fail without throwing: the process stays alive while
+    /// `NSApp.windows` remains empty and the content closure is never evaluated.
+    /// A delayed AppKit-hosted window is the deterministic escape hatch. It is
+    /// created only when no main-capable window exists, so the normal path never
+    /// gets a second window.
+    private func scheduleFallbackWindow() {
+        let forced = ProcessInfo.processInfo.environment["LLM_PROBE_FORCE_FALLBACK_WINDOW"] != nil
+        let delay: Double = forced ? 0.15 : 0.85
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.createFallbackWindowIfNeeded(force: forced)
+        }
+    }
+
+    private func createFallbackWindowIfNeeded(force: Bool = false) {
+        guard fallbackWindow == nil else { return }
+        let existingMainWindows = NSApp.windows.filter {
+            $0.canBecomeMain && !$0.isSheet && !self.isSettingsWindow($0)
+        }
+        guard force || existingMainWindows.isEmpty else { return }
+
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: preferredSize),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.identifier = NSUserInterfaceItemIdentifier("dev.llmprobe.app.fallback-window")
+        window.title = "LLMProbe"
+        window.minSize = minimumSize
+        window.isReleasedWhenClosed = false
+        let host = NSHostingController(rootView: ContentView().environmentObject(AppModel.shared))
+        // Without this the hosting controller resizes the window to the content's
+        // fitting size as soon as the state load replaces what the detail view
+        // shows, which is the collapse this class exists to prevent.
+        if #available(macOS 13.0, *) { host.sizingOptions = [] }
+        window.contentViewController = host
+        window.center()
+        fallbackWindow = window
+        FileHandle.standardError.write(Data("WINDOWDEBUG fallback-created\n".utf8))
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        if force {
+            existingMainWindows.filter { $0 !== window }.forEach { $0.close() }
+        }
+    }
+
+    /// If the regular SwiftUI window appears after the fallback was installed,
+    /// keep the regular one and remove only the fallback. Settings windows are
+    /// intentionally retained: they can coexist with the main window.
+    private func observeMainWindowCreation() {
+        for name in [NSWindow.didBecomeMainNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                MainActor.assumeIsolated {
+                    guard let self,
+                          let window = note.object as? NSWindow,
+                          window !== self.fallbackWindow,
+                          window.canBecomeMain,
+                          !window.isSheet,
+                          !self.isSettingsWindow(window) else { return }
+                    self.fallbackWindow?.close()
+                    self.fallbackWindow = nil
+                }
+            }
+        }
+    }
+
+    private func isSettingsWindow(_ window: NSWindow) -> Bool {
+        ["Settings", "设置"].contains(window.title)
     }
 
     private func pinMainWindow() {
@@ -121,7 +248,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let windows = NSApp.windows.filter { $0.canBecomeMain }
-        guard let window = windows.first ?? NSApp.windows.first else { return }
+        guard let window = windows.first(where: { $0 !== fallbackWindow })
+                ?? fallbackWindow
+                ?? NSApp.windows.first else { return }
         window.minSize = minimumSize
         let frame = window.frame
         if frame.width < minimumSize.width || frame.height < minimumSize.height {

@@ -6,42 +6,74 @@ struct Sidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            List(selection: $model.selection) {
-                ForEach(model.groupedEndpoints, id: \.group) { group in
-                    Section {
-                        ForEach(group.items) { endpoint in
-                            SidebarRow(
-                                endpoint: endpoint,
-                                verdict: model.reports[endpoint.id]?.verdict,
-                                isRunning: model.runningID == endpoint.id
-                            )
-                            .tag(endpoint.id)
-                            .contextMenu {
-                                Button(L10n.t("运行探针", "Run probe")) { model.run(endpoint) }
-                                Button(L10n.t("编辑…", "Edit…")) { model.beginEdit(endpoint) }
-                                Button(L10n.t("复制", "Duplicate")) { model.duplicate(endpoint) }
-                                Divider()
-                                Button(L10n.t("删除", "Delete"), role: .destructive) { model.delete(endpoint) }
+            // With no endpoints the list has no rows and the search field has
+            // nothing to search, which leaves the whole column blank and reads
+            // as a broken window. An explicit placeholder keeps the sidebar
+            // meaningful and the bottom bar always reachable.
+            if model.endpoints.isEmpty {
+                emptySidebar
+            } else {
+                List(selection: $model.selection) {
+                    ForEach(model.groupedEndpoints, id: \.group) { group in
+                        Section {
+                            ForEach(group.items) { endpoint in
+                                SidebarRow(
+                                    endpoint: endpoint,
+                                    verdict: model.reports[endpoint.id]?.verdict,
+                                    isRunning: model.runningID == endpoint.id
+                                )
+                                .tag(endpoint.id)
+                                .contextMenu {
+                                    Button(L10n.t("运行探针", "Run probe")) { model.run(endpoint) }
+                                    Button(L10n.t("编辑…", "Edit…")) { model.beginEdit(endpoint) }
+                                    Button(L10n.t("复制", "Duplicate")) { model.duplicate(endpoint) }
+                                    Divider()
+                                    Button(L10n.t("删除", "Delete"), role: .destructive) { model.delete(endpoint) }
+                                }
                             }
+                        } header: {
+                            HStack(spacing: 6) {
+                                Text(group.group)
+                                Spacer()
+                                Text("\(group.items.count)")
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .font(.caption.weight(.semibold))
                         }
-                    } header: {
-                        HStack(spacing: 6) {
-                            Text(group.group)
-                            Spacer()
-                            Text("\(group.items.count)")
-                                .foregroundStyle(.tertiary)
-                        }
-                        .font(.caption.weight(.semibold))
                     }
                 }
+                .listStyle(.sidebar)
+                .searchable(text: $model.searchText, placement: .sidebar, prompt: L10n.t("搜索端点或模型", "Search endpoints or models"))
             }
-            .listStyle(.sidebar)
-            .searchable(text: $model.searchText, placement: .sidebar, prompt: L10n.t("搜索端点或模型", "Search endpoints or models"))
 
             Divider()
             footer
         }
         .safeAreaInset(edge: .bottom) { bottomBar }
+    }
+
+    /// Placeholder for the "nothing has been added yet" state.
+    private var emptySidebar: some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 0)
+            Image(systemName: "tray")
+                .font(.system(size: 22, weight: .regular))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+            Text(L10n.t("还没有端点", "No endpoints yet"))
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text(L10n.t("用下面的按钮自动探测或手动添加。", "Use the buttons below to auto-discover or add one."))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 210)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 12)
     }
 
     private var footer: some View {
@@ -67,7 +99,7 @@ struct Sidebar: View {
                 Label(L10n.t("自动探测", "Auto-discover"), systemImage: "sparkle.magnifyingglass")
                     .frame(maxWidth: .infinity)
             }
-            .help(L10n.t("读取 CC Switch、Codex、Claude Code、opencode 等本地配置", "Reads local configs from CC Switch, Codex, Claude Code, opencode and more"))
+            .help(L10n.t("读取 CC Switch、Codex CLI、Claude Code、OpenCode 等本地配置", "Reads local configs from CC Switch, Codex CLI, Claude Code, OpenCode and more"))
 
             SettingsButton()
 

@@ -8,7 +8,7 @@ Thanks for taking a look. This is a small, focused tool: it probes LLM upstreams
 2. **Read-only on other tools.** Readers may read `~/.cc-switch`, `~/.codex`, `~/.claude`, `~/.config/opencode` and friends. They must never write there. CC Switch's SQLite stays `?mode=ro`.
 3. **Never print a credential.** Every string that leaves the process goes through `Redactor`. Report "configured / not configured", never the value.
 4. **Token discipline is a feature.** A new probe must justify its cost, must have an entry in `ProbeKind` with a token estimate, and must not run in the `free` plan unless it spends zero completion tokens.
-5. **Bilingual.** Every user-facing string is written as `L10n.t("中文", "English")` (or `L10n.pick(zh:en:)`) at the call site — there is no `.strings` bundle to silently miss a key. `llmprobe selftest` fails when an enum loses a translation.
+5. **Bilingual.** Every user-facing string carries both languages at the call site — `L10n.t(_ zh: String, _ en: String)`, or `L10n.pick(zh:en:)` — so there is no `.strings` bundle to silently miss a key. `llmprobe selftest` fails when an enum loses a translation.
 
 ## Getting set up
 

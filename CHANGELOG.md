@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Appearance setting (Settings → Appearance): **System / Light / Dark**, applied immediately and remembered between launches. `--appearance system|light|dark` forces it for screenshots and layout checks.
+- Documentation screenshots are now captured per language and per appearance (Chinese and English, light and dark home screens, discovery and settings), and the dashboards in the READMEs switch automatically with the reader's GitHub theme.
+
+### Changed
+
+- Discovery no longer writes to the endpoint list on its own. The sheet shows what it read, and a single blue **Import N endpoints** button applies it; **Cancel** leaves the list untouched.
+- The Settings window is built with an explicit `NSHostingController` (`sizingOptions = []`) instead of SwiftUI's `Settings` scene. That scene let SwiftUI resize the window to its content while the grouped form re-laid itself out, which ended in `NSGenericException: ... more Layout Window passes ...` and aborted the app on macOS 26/27.
+- The self test grew to 42 checks with the appearance-preference parsing/resolution rules.
+
 ## [0.1.0] — 2026-10-03
 
 First public release. macOS is the only platform that has actually been built and run; Windows and Linux are best-effort and **untested** (see the README).

@@ -29,6 +29,11 @@ __pycache__/
 ._*
 .AppleDouble
 
+# Maintainer-only working notes. They describe this Mac, its absolute paths and
+# the internal hand-off process, so they stay local and are never published.
+AGENTS.md
+HANDOFF.md
+
 # Editors
 .idea/
 .vscode/

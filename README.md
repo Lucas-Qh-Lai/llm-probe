@@ -48,23 +48,29 @@ LLMProbe 就是给这些问题准备的：它读取你本机已有的 Agent 配�
 
 ## 界面截图
 
-### 中文界面（可在设置中切换语言）
+> 所有截图都来自仓库内的虚构演示数据（`scripts/demo_server.py` + `scripts/capture_screenshots.sh`），不含任何真实配置。
+> 本文件只放中文界面截图；英文界面截图见 [README.en.md](README.en.md)。
 
-![LLMProbe 中文主界面](docs/images/screenshot-main.png)
+### 主界面（浅色）
 
-### English UI
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-main-dark.png">
+  <img alt="LLMProbe 主界面（浅色）" src="docs/images/screenshot-main.png">
+</picture>
 
-![LLMProbe English UI](docs/images/screenshot-main-en.png)
+### 深色模式
+
+设置 → 外观可在 **跟随系统 / 浅色 / 深色** 之间切换，立即生效并记住选择。GitHub 支持按浏览器主题切换图片，所以在深色主题下浏览本页时，上面的主界面截图会自动换成深色版本。
+
+![LLMProbe 主界面（深色）](docs/images/screenshot-main-dark.png)
 
 ### 自动探测本机配置
 
 ![自动探测面板](docs/images/screenshot-discovery.png)
 
-### 设置：语言、数据与隐私
+### 设置：语言、外观、数据与隐私
 
 ![设置面板](docs/images/screenshot-settings.png)
-
-> 所有截图都来自仓库内的虚构演示数据（`scripts/demo_server.py` + `scripts/capture_screenshots.sh`），不含任何真实配置。
 
 ---
 
@@ -77,7 +83,7 @@ LLMProbe 就是给这些问题准备的：它读取你本机已有的 Agent 配�
 | **上下文长度** | 优先读模型目录元数据（**0 token**）；需要实证时用 payload 搜索实测上限 |
 | **最大输出 token** | 优先读声明值；没有声明时用一次「故意超限」的请求，从上游报错里读出真实上限（**0 completion token**） |
 | **能力矩阵** | 工具调用、并行工具调用、视觉、音频输入/输出、结构化输出、JSON 模式、推理模式、提示缓存、系统提示、种子、logprobs、嵌入、流式 |
-| **自动探测配置** | CC Switch、Codex、Claude Code、OpenCode、Gemini CLI、Continue、Aider、环境变量、本机模型服务（23 个来源），合并去重后一键导入 |
+| **自动探测配置** | CC Switch、Codex、Claude Code、OpenCode、Gemini CLI、Continue、Aider、环境变量、本机模型服务（23 个来源），合并去重、确认后一键导入 |
 | **中英双语** | GUI 全量双语，设置里随时切换、无需重启；默认跟随系统语言（中文系统→中文，英文系统→英文，其它语言→英文） |
 | **GUI + CLI** | 同一套引擎。GUI 用 SwiftUI（原生控件、原生菜单、原生设置窗口），CLI 供终端与你自己的 Agent 调用 |
 | **完全本地** | 不发送遥测、不上传配置、不做任何「云端校验」；状态文件权限 `0600`；输出经过统一脱敏 |
@@ -153,8 +159,8 @@ Agent 使用要点：
 ## 快速上手（GUI）
 
 1. 打开 LLMProbe，点 **自动探测配置**；
-2. 在面板里勾选要测的端点（CC Switch 里的 provider、Codex 配置里的模型、Claude Code 的环境变量等都会列出来）；
-3. 点 **导入**，端点进入左侧列表；
+2. 面板里会列出读到的来源和端点（CC Switch 里的 provider、Codex 配置里的模型、Claude Code 的环境变量等）；想重扫就点 **重新探测**；
+3. 点蓝色的 **导入 N 个端点**，端点才进入左侧列表；点 **取消** 则不会添加任何配置；
 4. 选中端点，选好强度（免费 / 快速 / 深度），按 **⌘↩** 开始探测；
 5. 右侧看四张指标卡（结论 / TTFT / 输出速度 / 上下文）、能力矩阵和每个探针的明细。
 
@@ -439,7 +445,7 @@ sudo lsof -i -n -P | grep LLMProbe
 ```bash
 swift build                              # 构建全部 target
 swift build --product llmprobe           # 只构建 CLI（快）
-swift run llmprobe selftest              # 离线自检，必须 40/40 全绿
+swift run llmprobe selftest              # 离线自检，必须 42/42 全绿
 swift test                               # 需要完整 Xcode；只有命令行工具时用 selftest 代替
 ./scripts/build_app.sh release           # 打包并安装到 ~/Applications/LLMProbe.app
 ./scripts/install_cli.sh                 # 安装 CLI
@@ -455,7 +461,7 @@ swift test                               # 需要完整 Xcode；只有命令行�
 
 1. **找一个明确任务**：从现有 Issue 认领，或新开 Issue 描述问题、复现步骤、期望行为；安全问题请使用 GitHub Private Vulnerability Reporting，不要发公开 Issue。
 2. **Fork 并建分支**：`fix/...`、`feature/...`、`discovery/...`、`docs/...` 均可；不要直接推送受保护分支。
-3. **在本机构建验证**：至少运行 `swift build` 与 `swift run llmprobe selftest`。当前基线是 **40/40 全绿**，新增纯函数逻辑必须同步添加 `SelfTest.Check`。
+3. **在本机构建验证**：至少运行 `swift build` 与 `swift run llmprobe selftest`。当前基线是 **42/42 全绿**，新增纯函数逻辑必须同步添加 `SelfTest.Check`。
 4. **提交前跑隐私门禁**：`./scripts/check_privacy.sh` 必须 clean；不得提交真实 base URL、模型名、密钥、Cookie、`state.json`、`.app` 包或本机绝对路径。
 5. **提交 Pull Request**：说明改了什么、为什么、如何验证、影响哪些平台；UI 改动附改前/改后截图，发现器改动附虚构 fixture 的解析结果。PR 会检查构建、自检、隐私、文案与行为回归。
 6. **合并与 Release**：维护者审核合并后更新版本、文档和 Release Notes；Release 采用累积发布，不删除旧 tag 或旧 Release。
@@ -496,7 +502,7 @@ docs/images/             截图与应用图标
 
 ### 离线自检覆盖了什么
 
-`llmprobe selftest` 不联网、不读凭据，40 项检查覆盖：脱敏规则、token 估算、JSONC / TOML / YAML 子集解析（含无缩进序列）、多 Agent provider / model 提取、产品名大小写、SSE 分帧、端点去重与本机识别、协议推断、错误分类（含「从报错里提取上下文上限」）、计划预算、能力缓存优先级、状态文件往返、能力模态完整性、双语文案切换与枚举全覆盖、启动参数解析、传输错误的双语映射、系统语言映射和 CLI 只输出英文。
+`llmprobe selftest` 不联网、不读凭据，42 项检查覆盖：脱敏规则、token 估算、JSONC / TOML / YAML 子集解析（含无缩进序列）、多 Agent provider / model 提取、产品名大小写、SSE 分帧、端点去重与本机识别、协议推断、错误分类（含「从报错里提取上下文上限」）、计划预算、能力缓存优先级、状态文件往返、能力模态完整性、双语文案切换与枚举全覆盖、启动参数解析、传输错误的双语映射、系统语言映射、外观偏好解析（`--appearance`）和 CLI 只输出英文。
 
 ---
 

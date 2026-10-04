@@ -14,6 +14,8 @@
 # width) and retries the whole launch when the result is a thumbnail.
 #
 # Usage: scripts/capture_screenshots.sh [output-directory]
+#
+# Writes screenshot-*.png into the output directory (docs/images by default).
 # Env:   LLM_PROBE_APP           path to LLMProbe.app (default ~/Applications/LLMProbe.app)
 #        LLM_PROBE_CAPTURE_DELAY seconds to let the window settle (default 10)
 #        LLM_PROBE_CAPTURE_TRIES attempts per screenshot (default 4)
@@ -200,14 +202,33 @@ capture() {
   return 1
 }
 
+# Eight images: a light and a dark home page, and a discovery / settings shot,
+# for each of the two interface languages. Each README links only the images for
+# its own language, so no Chinese capture ever appears in the English README.
+#
+#   zh light  screenshot-main.png / screenshot-discovery.png / screenshot-settings.png
+#   en light  screenshot-main-en.png / screenshot-discovery-en.png / screenshot-settings-en.png
+#   zh dark   screenshot-main-dark.png
+#   en dark   screenshot-main-dark-en.png
+#
+# Every capture passes `--appearance` so the result never depends on whichever
+# light/dark setting this Mac happens to use.
 capture "$OUT/screenshot-main.png" "$MIN_WIDTH_MAIN" largest \
-  --state-dir "$DEMO_HOME" --autorun --language zh
+  --state-dir "$DEMO_HOME" --autorun --language zh --appearance light
+capture "$OUT/screenshot-main-dark.png" "$MIN_WIDTH_MAIN" largest \
+  --state-dir "$DEMO_HOME" --autorun --language zh --appearance dark
 capture "$OUT/screenshot-main-en.png" "$MIN_WIDTH_MAIN" largest \
-  --state-dir "$DEMO_HOME" --autorun --language en
+  --state-dir "$DEMO_HOME" --autorun --language en --appearance light
+capture "$OUT/screenshot-main-dark-en.png" "$MIN_WIDTH_MAIN" largest \
+  --state-dir "$DEMO_HOME" --autorun --language en --appearance dark
 capture "$OUT/screenshot-discovery.png" "$MIN_WIDTH_SHEET" largest \
-  --state-dir "$DEMO_HOME" --demo-discovery --show-discovery --language zh
+  --state-dir "$DEMO_HOME" --demo-discovery --show-discovery --language zh --appearance light
+capture "$OUT/screenshot-discovery-en.png" "$MIN_WIDTH_SHEET" largest \
+  --state-dir "$DEMO_HOME" --demo-discovery --show-discovery --language en --appearance light
 capture "$OUT/screenshot-settings.png" "$MIN_WIDTH_SHEET" settings \
-  --state-dir "$DEMO_HOME" --demo-discovery --language zh --show-settings
+  --state-dir "$DEMO_HOME" --demo-discovery --language zh --appearance light --show-settings
+capture "$OUT/screenshot-settings-en.png" "$MIN_WIDTH_SHEET" settings \
+  --state-dir "$DEMO_HOME" --demo-discovery --language en --appearance light --show-settings
 
 echo "==> Stripping capture metadata"
 python3 "$ROOT/scripts/strip_image_metadata.py" "$OUT"/screenshot-*.png

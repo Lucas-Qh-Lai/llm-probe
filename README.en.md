@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md"><img alt="语言：简体中文" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-6e7781?style=for-the-badge"></a>
+  <a href="README.md"><img alt="Language: Simplified Chinese" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-6e7781?style=for-the-badge"></a>
   <a href="README.en.md"><img alt="Language: English" src="https://img.shields.io/badge/Language-English-2ea043?style=for-the-badge"></a>
 </p>
 
@@ -24,7 +24,7 @@
   <img alt="No telemetry" src="https://img.shields.io/badge/no-telemetry-4c1">
 </p>
 
-> 中文版：[README.md](README.md)
+> Chinese version: [README.md](README.md)
 
 > **Privacy promise: apart from probe requests that you explicitly send to a selected LLM upstream, LLMProbe runs entirely on this Mac.**
 > It never uploads agent configuration, endpoints, model names, credentials or usage data. There is no telemetry, crash reporting, update check or phoning home.
@@ -49,23 +49,29 @@ It has two dependencies: your Mac, and the upstream you want to test. No account
 
 ## Screenshots
 
-### English UI (switchable in Settings)
+> Every screenshot is produced from fictional demo data inside this repository (`scripts/demo_server.py` + `scripts/capture_screenshots.sh`). No real configuration appears in them.
+> This file shows the English interface only; the Chinese screenshots live in [README.md](README.md).
 
-![LLMProbe English UI](docs/images/screenshot-main-en.png)
+### Home screen (light)
 
-### 中文界面
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-main-dark-en.png">
+  <img alt="LLMProbe home screen (light)" src="docs/images/screenshot-main-en.png">
+</picture>
 
-![LLMProbe 中文主界面](docs/images/screenshot-main.png)
+### Dark mode
+
+Settings → Appearance switches between **System / Light / Dark**; the change applies immediately and is remembered. GitHub switches images on the viewer's theme, so the home-screen capture above turns dark on its own when this page is read in a dark theme.
+
+![LLMProbe home screen (dark)](docs/images/screenshot-main-dark-en.png)
 
 ### Discovering local configuration
 
-![Discovery panel](docs/images/screenshot-discovery.png)
+![Discovery panel](docs/images/screenshot-discovery-en.png)
 
-### Settings: language, data, privacy
+### Settings: language, appearance, data and privacy
 
-![Settings panel](docs/images/screenshot-settings.png)
-
-> Every screenshot is produced from fictional demo data inside this repository (`scripts/demo_server.py` + `scripts/capture_screenshots.sh`). No real configuration appears in them.
+![Settings panel](docs/images/screenshot-settings-en.png)
 
 ---
 
@@ -154,14 +160,14 @@ Notes for agents:
 ## Quick start (GUI)
 
 1. Open LLMProbe and click **Auto-discover config**;
-2. Tick the endpoints you want (CC Switch providers, Codex providers, Claude Code environment overrides…);
-3. Click **Import** — they appear in the sidebar;
+2. The sheet lists the sources and endpoints it read (CC Switch providers, Codex providers, Claude Code environment overrides…); press **Scan again** to re-read them;
+3. Click the blue **Import N endpoints** button — only then do they appear in the sidebar. **Cancel** adds nothing;
 4. Select one, pick a plan (Free / Quick / Deep) and hit **⌘↩**;
 5. The detail pane shows four metric cards (verdict / TTFT / output speed / context), the capability matrix and every probe result.
 
 Shortcuts: `⌘N` add endpoint · `⇧⌘D` discover · `⌘↩` probe selected · `⇧⌘R` probe all · `⌘.` cancel · `⌘,` Settings.
 
-Settings lets you switch the **interface language (System / 简体中文 / English)**; the change applies immediately and is remembered.
+Settings lets you switch the **interface language (System / Simplified Chinese / English)**; the change applies immediately and is remembered.
 
 ---
 
@@ -440,7 +446,7 @@ sudo lsof -i -n -P | grep LLMProbe
 ```bash
 swift build                              # everything
 swift build --product llmprobe           # CLI only (fast)
-swift run llmprobe selftest              # offline self test — must stay 40/40 green
+swift run llmprobe selftest              # offline self test — must stay 42/42 green
 swift test                               # needs full Xcode; use selftest without it
 ./scripts/build_app.sh release           # build + install ~/Applications/LLMProbe.app
 ./scripts/install_cli.sh                 # install the CLI
@@ -456,7 +462,7 @@ Bug fixes, agent configuration adapters, UI/copy improvements, tests, documentat
 
 1. **Pick a concrete task** — claim an existing Issue or open one with reproduction steps and expected behavior. Report security issues through GitHub Private Vulnerability Reporting, not a public Issue.
 2. **Fork and branch** — use `fix/...`, `feature/...`, `discovery/...` or `docs/...`; do not push directly to protected branches.
-3. **Build and self-test locally** — run at least `swift build` and `swift run llmprobe selftest`. The current baseline is **40/40 green**; every new pure parsing/classification rule needs a `SelfTest.Check`.
+3. **Build and self-test locally** — run at least `swift build` and `swift run llmprobe selftest`. The current baseline is **42/42 green**; every new pure parsing/classification rule needs a `SelfTest.Check`.
 4. **Run the privacy gate** — `./scripts/check_privacy.sh` must be clean. Never commit real base URLs, model names, credentials, cookies, `state.json`, `.app` bundles or machine-specific absolute paths.
 5. **Open a Pull Request** — explain what changed, why, how it was tested and which platforms are affected. UI changes need before/after screenshots; discovery changes need fictional fixture results. PRs are checked for build, self-test, privacy, copy and regressions.
 6. **Merge and release** — maintainers review, merge, update version/docs/release notes. Releases are cumulative; old tags and releases are never deleted.
@@ -497,7 +503,7 @@ docs/images/             screenshots and app icon
 
 ### What the offline self test covers
 
-`llmprobe selftest` touches no network and no credential. Its 40 checks cover redaction, token estimation, JSONC / TOML / YAML-subset parsing (including indentless sequences), multi-agent provider/model extraction, product-name capitalization, SSE framing, endpoint de-duplication and local-host detection, wire-API inference, error classification (including limit extraction), plan budgets, capability cache precedence, state round-trip, modality coverage, bilingual/enumeration coverage, launch arguments, transport-message localization, system-language mapping and the English-only CLI contract.
+`llmprobe selftest` touches no network and no credential. Its 42 checks cover redaction, token estimation, JSONC / TOML / YAML-subset parsing (including indentless sequences), multi-agent provider/model extraction, product-name capitalization, SSE framing, endpoint de-duplication and local-host detection, wire-API inference, error classification (including limit extraction), plan budgets, capability cache precedence, state round-trip, modality coverage, bilingual/enumeration coverage, launch arguments, transport-message localization, system-language mapping, appearance-preference parsing (`--appearance`) and the English-only CLI contract.
 
 ---
 

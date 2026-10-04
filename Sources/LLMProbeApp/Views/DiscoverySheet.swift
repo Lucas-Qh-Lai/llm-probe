@@ -138,22 +138,46 @@ struct DiscoverySheet: View {
         }
     }
 
+    /// The one primary action: discovery only reads, so nothing reaches the
+    /// endpoint list until this is pressed. Cancel and Scan again stay in the
+    /// ordinary (grey) button style so the blue button is the only obvious
+    /// place to click.
     private var footer: some View {
-        HStack {
+        HStack(spacing: 8) {
             Toggle(L10n.t("同时扫描本地模型服务", "Also scan local model servers"), isOn: $model.includeLocalServers)
                 .toggleStyle(.switch)
                 .controlSize(.small)
             Spacer()
-            Button(L10n.t("关闭", "Close")) { dismiss() }
+            Button(hasPendingImport ? L10n.t("取消", "Cancel") : L10n.t("关闭", "Close")) {
+                // Cancelling drops the pending result without touching the list.
+                model.cancelDiscovery()
+                dismiss()
+            }
             Button {
                 Task { await model.discover() }
             } label: {
                 Label(model.discovery == nil ? L10n.t("开始探测", "Scan") : L10n.t("重新探测", "Scan again"), systemImage: "arrow.clockwise")
             }
-            .buttonStyle(.borderedProminent)
             .disabled(model.isDiscovering)
+            Button {
+                model.importDiscovered()
+                dismiss()
+            } label: {
+                Label(importTitle, systemImage: "square.and.arrow.down")
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+            .disabled(!hasPendingImport)
         }
         .padding(14)
+    }
+
+    private var hasPendingImport: Bool { model.discovery != nil }
+
+    private var importTitle: String {
+        let count = model.pendingDiscoveryCount
+        guard count > 0 else { return L10n.t("导入端点", "Import endpoints") }
+        return L10n.t("导入 \(count) 个端点", "Import \(count) endpoints")
     }
 
     private func icon(for status: DiscoverySource.Status) -> String {

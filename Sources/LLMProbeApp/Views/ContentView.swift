@@ -3,7 +3,6 @@ import LLMProbeCore
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         NavigationSplitView {
@@ -45,7 +44,7 @@ struct ContentView: View {
             // permission, which a fresh machine will not have granted.
             guard LaunchOptions.shared.showSettings else { return }
             try? await Task.sleep(nanoseconds: 900_000_000)
-            openSettings()
+            SettingsWindowController.shared.show()
         }
     }
 }

@@ -35,6 +35,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// cannot re-enter and start a shrink/repair loop with SwiftUI.
     private var isRepairingSize = false
 
+    /// Runs before SwiftUI builds its scene, so a layout render can exit without
+    /// ever showing a window.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Before SwiftUI builds its scene, so windows are born in the right
+        // appearance instead of flashing the system one first.
+        AppearanceController.apply(AppearanceController.launchPreference)
+        if ViewRenderer.runIfRequested() { exit(0) }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         startWindowTraceIfRequested()
@@ -247,9 +256,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 try? handle.close()
             }
         }
-        let windows = NSApp.windows.filter { $0.canBecomeMain }
+        let windows = NSApp.windows.filter { $0.canBecomeMain && !isSettingsWindow($0) }
         guard let window = windows.first(where: { $0 !== fallbackWindow })
                 ?? fallbackWindow
+                ?? NSApp.windows.first(where: { !isSettingsWindow($0) })
                 ?? NSApp.windows.first else { return }
         window.minSize = minimumSize
         let frame = window.frame

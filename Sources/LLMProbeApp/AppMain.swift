@@ -36,6 +36,12 @@ struct LLMProbeAppMain: App {
                 }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
             }
+            CommandGroup(replacing: .appSettings) {
+                // SwiftUI's own Settings scene is not used; see
+                // SettingsWindowController for the layout loop it caused.
+                Button("Settings…") { SettingsWindowController.shared.show() }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandMenu("Probe") {
                 Button("Run selected endpoint") { model.runSelected() }
                     .keyboardShortcut(.return, modifiers: .command)
@@ -50,11 +56,6 @@ struct LLMProbeAppMain: App {
                     Text("Deep").tag(ProbePlan.deep)
                 }
             }
-        }
-
-        Settings {
-            SettingsView()
-                .environmentObject(model)
         }
     }
 }

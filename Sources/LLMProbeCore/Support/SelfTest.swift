@@ -419,6 +419,44 @@ public enum SelfTest {
             }
             return nil
         },
+        Check(name: "appearance.parses-launch-argument") {
+            if AppAppearance(commandLineValue: "light") != .light { return "light was not parsed" }
+            if AppAppearance(commandLineValue: "DARK") != .dark { return "DARK was not parsed" }
+            if AppAppearance(commandLineValue: "darkAqua") != .dark { return "darkAqua was not parsed" }
+            if AppAppearance(commandLineValue: "system") != .system { return "system was not parsed" }
+            if AppAppearance(commandLineValue: "auto") != .system { return "auto was not parsed" }
+            if AppAppearance(commandLineValue: "solarized") != nil { return "an unknown appearance should not parse" }
+            return nil
+        },
+        Check(name: "appearance.resolves-the-preference") {
+            // The rule the screenshots and the picker both rely on: an explicit
+            // choice always wins, and `system` follows the Mac.
+            if AppearanceSettings.resolve(.light, systemIsDark: true) != .light {
+                return "an explicit light choice was overridden by a dark Mac"
+            }
+            if AppearanceSettings.resolve(.dark, systemIsDark: false) != .dark {
+                return "an explicit dark choice was overridden by a light Mac"
+            }
+            if AppearanceSettings.resolve(.system, systemIsDark: true) != .dark {
+                return "a dark Mac did not resolve to dark"
+            }
+            if AppearanceSettings.resolve(.system, systemIsDark: false) != .light {
+                return "a light Mac did not resolve to light"
+            }
+            if ResolvedAppearance.dark.isDark != true || ResolvedAppearance.light.isDark != false {
+                return "isDark does not follow the resolved appearance"
+            }
+            if LaunchOptions(arguments: ["--appearance", "dark"]).appearance != .dark {
+                return "--appearance dark did not reach the launch options"
+            }
+            if LaunchOptions(arguments: ["--appearance", "nocturnal"]).appearance != nil {
+                return "an unknown --appearance value should be ignored"
+            }
+            for appearance in AppAppearance.allCases where appearance.displayName.isEmpty {
+                return "appearance '\(appearance.rawValue)' has no display name"
+            }
+            return nil
+        },
         Check(name: "cli.prints-english-only") {
             // The macOS app is bilingual, the CLI is not: the engine renders its
             // summaries through `L10n`, so the CLI pins the language once at

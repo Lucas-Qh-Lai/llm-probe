@@ -32,9 +32,20 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Interface appearance (System / Light / Dark). Changing it re-applies the
+    /// AppKit appearance immediately and is persisted for the next launch.
+    @Published var appearance: AppAppearance {
+        didSet {
+            guard !isApplyingInitialAppearance else { return }
+            AppearanceSettings.shared.apply(appearance)
+            AppearanceController.apply(appearance)
+        }
+    }
+
     private var currentEngine: ProbeEngine?
     private var runTask: Task<Void, Never>?
     private var isApplyingInitialLanguage = true
+    private var isApplyingInitialAppearance = true
 
     struct Banner: Identifiable {
         enum Kind { case info, error }
@@ -50,9 +61,14 @@ final class AppModel: ObservableObject {
         let preference = LaunchOptions.shared.language ?? LanguageSettings.loadPreference()
         LanguageSettings.shared.apply(preference, persist: false)
         self.language = preference
+        let appearancePreference = AppearanceController.launchPreference
+        AppearanceSettings.shared.apply(appearancePreference, persist: false)
+        self.appearance = appearancePreference
+        AppearanceController.apply(appearancePreference)
         self.state = EndpointStoreFile.load()
         selection = state.selectedID ?? state.endpoints.first?.id
         isApplyingInitialLanguage = false
+        isApplyingInitialAppearance = false
         startLaunchActions()
     }
 
@@ -62,14 +78,24 @@ final class AppModel: ObservableObject {
         let preference = LaunchOptions.shared.language ?? LanguageSettings.loadPreference()
         LanguageSettings.shared.apply(preference, persist: false)
         self.language = preference
+        let appearancePreference = AppearanceController.launchPreference
+        AppearanceSettings.shared.apply(appearancePreference, persist: false)
+        self.appearance = appearancePreference
+        AppearanceController.apply(appearancePreference)
         self.state = state
         selection = state.selectedID ?? state.endpoints.first?.id
         isApplyingInitialLanguage = false
+        isApplyingInitialAppearance = false
     }
 
     /// Applies a language chosen in the settings pane.
     func setLanguage(_ value: AppLanguage) {
         language = value
+    }
+
+    /// Applies an appearance chosen in the settings pane.
+    func setAppearance(_ value: AppAppearance) {
+        appearance = value
     }
 
     private func startLaunchActions() {
@@ -151,16 +177,48 @@ final class AppModel: ObservableObject {
         } else {
             result = await ConfigDiscovery.scan(includeLocalServers: includeLocalServers)
         }
+        // Discovery never writes to the endpoint list by itself. The result is
+        // held until the user confirms it, so closing the sheet with "Cancel"
+        // leaves the list exactly as it was.
         discovery = result
-        mergeDiscovered(result.endpoints)
         state.lastDiscovery = result.scannedAt
         save()
         let found = result.sources.filter { $0.status == .found }.count
         banner = Banner(
             kind: .info,
             title: L10n.t("探测完成", "Discovery finished"),
-            message: L10n.t("在 \(found) 个来源中找到 \(result.endpoints.count) 个端点，已合并到列表。", "Found \(result.endpoints.count) endpoints across \(found) sources and merged them into the list.")
+            message: L10n.t(
+                "在 \(found) 个来源中找到 \(result.endpoints.count) 个端点，确认后才会加入列表。",
+                "Found \(result.endpoints.count) endpoints across \(found) sources. They are added only after you confirm."
+            )
         )
+    }
+
+    /// How many endpoints the pending discovery result would add.
+    var pendingDiscoveryCount: Int { discovery?.endpoints.count ?? 0 }
+
+    /// Applies the pending discovery result to the endpoint list.
+    @discardableResult
+    func importDiscovered() -> Int {
+        guard let result = discovery else { return 0 }
+        mergeDiscovered(result.endpoints)
+        state.lastDiscovery = result.scannedAt
+        save()
+        let found = result.sources.filter { $0.status == .found }.count
+        banner = Banner(
+            kind: .info,
+            title: L10n.t("已导入", "Imported"),
+            message: L10n.t(
+                "已从 \(found) 个来源导入 \(result.endpoints.count) 个端点。",
+                "Imported \(result.endpoints.count) endpoints from \(found) sources."
+            )
+        )
+        return result.endpoints.count
+    }
+
+    /// Drops the pending discovery result without touching the endpoint list.
+    func cancelDiscovery() {
+        discovery = nil
     }
 
     /// Adds newly discovered endpoints while preserving local edits, and keeps

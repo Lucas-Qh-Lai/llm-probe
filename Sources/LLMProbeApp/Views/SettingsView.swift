@@ -19,7 +19,7 @@ struct SettingsView: View {
             about
                 .tabItem { Label(L10n.t("关于", "About"), systemImage: "info.circle") }
         }
-        .frame(width: 460, height: 320)
+        .frame(width: 460, height: 420)
     }
 
     private var general: some View {
@@ -42,6 +42,26 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
             } header: {
                 Text(L10n.t("语言", "Language"))
+            }
+
+            Section {
+                Picker(L10n.t("外观", "Appearance"), selection: Binding(
+                    get: { model.appearance },
+                    set: { model.setAppearance($0) }
+                )) {
+                    ForEach(AppAppearance.allCases) { appearance in
+                        Text(appearance.displayName).tag(appearance)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                Text(L10n.t(
+                    "浅色 / 深色 / 跟随系统。切换后立即生效，并会记住选择。",
+                    "Light, dark or follow the system. Applies immediately and is remembered."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } header: {
+                Text(L10n.t("外观", "Appearance"))
             }
 
             Section {

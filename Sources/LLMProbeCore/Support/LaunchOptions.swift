@@ -24,6 +24,10 @@ public struct LaunchOptions: Sendable {
     /// Force the interface language (`--language zh|en`), used for screenshots
     /// so a documentation image never depends on the reviewer's Mac settings.
     public let language: AppLanguage?
+    /// Force the interface appearance (`--appearance system|light|dark`), used
+    /// for the same reason: a documentation image must not depend on whichever
+    /// light/dark setting the reviewer's Mac happens to use.
+    public let appearance: AppAppearance?
 
     public init(arguments: [String]) {
         var directory: String?
@@ -32,6 +36,7 @@ public struct LaunchOptions: Sendable {
         var demoDiscovery = false
         var showSettings = false
         var language: AppLanguage?
+        var appearance: AppAppearance?
         var index = 0
         while index < arguments.count {
             switch arguments[index] {
@@ -53,6 +58,11 @@ public struct LaunchOptions: Sendable {
                     language = AppLanguage(commandLineValue: arguments[index + 1])
                     index += 1
                 }
+            case "--appearance":
+                if index + 1 < arguments.count {
+                    appearance = AppAppearance(commandLineValue: arguments[index + 1])
+                    index += 1
+                }
             default:
                 break
             }
@@ -64,6 +74,7 @@ public struct LaunchOptions: Sendable {
         self.demoDiscovery = demoDiscovery
         self.showSettings = showSettings
         self.language = language
+        self.appearance = appearance
     }
 }
 

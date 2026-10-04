@@ -18,12 +18,18 @@ esac
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Single source of truth for the version: LLMProbeVersion.short. Keeping the
+# Info.plist in sync by hand is how a bundle ends up reporting the last release.
+VERSION="$(sed -nE 's/.*public static let short = "([^"]+)".*/\1/p' \
+  "$ROOT/Sources/LLMProbeCore/Providers/EndpointResolver.swift" | head -1)"
+VERSION="${VERSION:-0.0.0}"
+
 BUILD_ARGS=(-c "$CONFIGURATION")
 if [ "$TARGET_ARCH" != "native" ]; then
   BUILD_ARGS+=(--arch "$TARGET_ARCH")
 fi
 
-echo "==> Building $CONFIGURATION binary for $TARGET_ARCH"
+echo "==> Building $CONFIGURATION binary for $TARGET_ARCH (LLMProbe $VERSION)"
 swift build "${BUILD_ARGS[@]}" --product LLMProbeApp
 
 BIN_PATH="$(swift build "${BUILD_ARGS[@]}" --show-bin-path)"
@@ -72,8 +78,8 @@ cat > "$CONTENTS/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>LLMProbe</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$VERSION</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>MIT licensed. Runs fully offline.</string>

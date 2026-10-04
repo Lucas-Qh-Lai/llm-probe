@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] — 2026-10-04
 
 ### Added
 
@@ -91,4 +91,5 @@ First public release. macOS is the only platform that has actually been built an
 - Automatic configuration detection for some agent tools—especially MiniMax Code, ZCode and Trae Agent—is unverified across versions and provided for reference only.
 - Azure OpenAI needs a deployment-specific URL and is entered manually.
 
+[0.2.0]: https://github.com/Lucas-Qh-Lai/llm-probe/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Lucas-Qh-Lai/llm-probe/releases/tag/v0.1.0

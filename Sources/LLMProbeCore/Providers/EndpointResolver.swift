@@ -102,5 +102,5 @@ public enum EndpointResolver {
 }
 
 public enum LLMProbeVersion {
-    public static let short = "0.1.0"
+    public static let short = "0.2.0"
 }

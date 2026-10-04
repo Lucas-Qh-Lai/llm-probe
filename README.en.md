@@ -29,6 +29,8 @@
 > **Privacy promise: apart from probe requests that you explicitly send to a selected LLM upstream, LLMProbe runs entirely on this Mac.**
 > It never uploads agent configuration, endpoints, model names, credentials or usage data. There is no telemetry, crash reporting, update check or phoning home.
 > The project is MIT-licensed and fully source-available for review, reproduction and independent builds.
+>
+> **Human + AI Vibe Coding.** This project is human-AI vibe coding, end to end; see [Vibe Coding and Acknowledgements](#vibe-coding-and-acknowledgements) for its origin, credits and disclaimer.
 
 ---
 
@@ -534,6 +536,23 @@ Please don't — it is a health check, not a benchmark. Each probe fires once (`
 
 If LLMProbe helped you, you are welcome to buy me a coffee ☕️ — [GitHub Sponsors](https://github.com/sponsors/Lucas-Qh-Lai).
 No pressure at all: filing an issue, reporting a bug or starring the repo counts as support too.
+
+---
+
+## Vibe Coding and Acknowledgements
+
+LLMProbe is the result of a human and AI **vibe coding** together: the requirements, the judgement calls and the final decisions are human, while a substantial part of the code, documentation and tests was produced with AI assistance. We state this plainly instead of hiding it — it is how the project actually came to be.
+
+The harness used for this project is **OpenAI Codex**; the primary model is **DeepSeek V4.1 Flash**, with additional work done by **MiMo V2.6 Pro** and **Muse Spark 1.3**.
+
+Thanks to that tool and those models for their help throughout development: from protocol adapters, discovery parsing, probe design and self-test coverage to the repeated polish of the bilingual docs. Thanks also to the upstream vendors, protocol specifications and local agent tools whose public documentation made a fully local, auditable health checker possible.
+
+### Disclaimer
+
+- This project is produced jointly by a human and AI and comes with **no guarantee** that the code, docs or probe results are fully correct in every environment. AI involvement means omissions, stale information and wrong judgement calls are possible; review it yourself and double-check any critical conclusion before relying on it.
+- LLMProbe only parses local configuration read-only, and only sends probe requests to the upstreams **you explicitly select**. It does not endorse, warrant or recommend any third-party service, vendor or model.
+- Probe results describe the upstream as it behaved **at the moment of the test** and may disagree with real usage because of rewriting, rate limiting, routing or configuration differences. Your own production verification is the source of truth.
+- The project is provided "as is" under the MIT license, and the author is not liable for any direct or indirect damages arising from its use. Assess and accept the risk yourself, and do not probe third-party endpoints without authorisation.
 
 ---
 
